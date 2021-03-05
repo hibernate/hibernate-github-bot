@@ -17,6 +17,7 @@
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>1.12.1.Final</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+    <quarkus-github-app.version>0.0.5</quarkus-github-app.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -33,7 +34,7 @@
     <dependency>
       <groupId>io.quarkiverse.githubapp</groupId>
       <artifactId>quarkus-github-app</artifactId>
-      <version>0.0.5</version>
+      <version>${quarkus-github-app.version}</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -42,6 +43,12 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkiverse.githubapp</groupId>
+      <artifactId>quarkus-github-app-testing</artifactId>
+      <version>${quarkus-github-app.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
