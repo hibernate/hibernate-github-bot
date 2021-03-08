@@ -23,6 +23,7 @@ import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.event.CheckRun;
 import io.quarkiverse.githubapp.event.PullRequest;
 import org.kohsuke.github.GHEventPayload;
+import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestCommitDetail;
 import org.kohsuke.github.GHRepository;
@@ -66,18 +67,32 @@ class CheckPullRequestContributionRules {
 		}
 
 		// Something failed; make sure to trigger a notification.
-		StringBuilder comment = new StringBuilder( "Thanks for your pull request!\n\n"
-				+ "This pull request does not follow the contribution rules. Could you have a look?\n" );
+		String checkFailureMessageIntro = "Thanks for your pull request!\n\n"
+				+ "This pull request does not follow the contribution rules. Could you have a look?\n";
+		GHIssueComment existingComment = null;
+		for ( GHIssueComment comment : pullRequest.listComments() ) {
+			if ( comment.getBody().startsWith( checkFailureMessageIntro ) ) {
+				existingComment = comment;
+				break;
+			}
+		}
 
-		outputs.forEach( output -> output.appendFailingRules( comment ) );
+		StringBuilder message = new StringBuilder( checkFailureMessageIntro );
 
-		comment.append( "\n\n› This message was automatically generated." );
+		outputs.forEach( output -> output.appendFailingRules( message ) );
+
+		message.append( "\n\n› This message was automatically generated." );
 
 		if ( !deploymentConfig.isDryRun() ) {
-			pullRequest.comment( comment.toString() );
+			if ( existingComment == null ) {
+				pullRequest.comment( message.toString() );
+			}
+			else {
+				existingComment.update( message.toString() );
+			}
 		}
 		else {
-			LOG.info( "Pull request #" + pullRequest.getNumber() + " - Add comment " + comment.toString() );
+			LOG.info( "Pull request #" + pullRequest.getNumber() + " - Add comment " + message.toString() );
 		}
 	}
 
