@@ -30,7 +30,7 @@ class CheckPullRequestContributionRequirements {
 	@Inject
 	DeploymentConfig deploymentConfig;
 
-	void checkPullRequestEditorialRules(@PullRequest.Opened GHEventPayload.PullRequest pullRequestPayload,
+	void checkPullRequestContributionRequirements(@PullRequest.Opened GHEventPayload.PullRequest pullRequestPayload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig)
 			throws IOException {
 		GHPullRequest pullRequest = pullRequestPayload.getPullRequest();
