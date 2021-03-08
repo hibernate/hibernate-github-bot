@@ -1,3 +1,5 @@
+package org.hibernate.infra.bot.tests;
+
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.when;
 import static org.mockito.Mockito.mock;
