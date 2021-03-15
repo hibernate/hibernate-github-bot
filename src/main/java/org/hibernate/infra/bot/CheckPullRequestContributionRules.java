@@ -62,7 +62,7 @@ class CheckPullRequestContributionRules {
 		}
 	}
 
-	void checkSuiteRequested(@CheckSuiteRequested GHEventPayload.CheckSuite payload,
+	void checkSuiteRequested(@CheckSuiteRequested @CheckSuite.Rerequested GHEventPayload.CheckSuite payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
 		for ( GHPullRequest pullRequest : payload.getCheckSuite().getPullRequests() ) {
 			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequest );
