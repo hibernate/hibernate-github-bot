@@ -35,6 +35,12 @@ class CheckPullRequestContributionRules {
 
 	private static final Pattern SPACE_PATTERN = Pattern.compile( "\\s+" );
 
+	private static final String COMMENT_INTRO_PASSED = "Thanks for your pull request!\n\n"
+			+ "This pull request appears to follow the contribution rules.";
+	private static final String COMMENT_INTRO_FAILED = "Thanks for your pull request!\n\n"
+			+ "This pull request does not follow the contribution rules. Could you have a look?\n";
+	private static final String COMMENT_FOOTER = "\n\n› This message was automatically generated.";
+
 	@Inject
 	DeploymentConfig deploymentConfig;
 
@@ -71,26 +77,17 @@ class CheckPullRequestContributionRules {
 			outputs.add( Check.run( context, check ) );
 		}
 
-		if ( outputs.stream().allMatch( CheckRunOutput::passed ) ) {
+		boolean passed = outputs.stream().allMatch( CheckRunOutput::passed );
+		GHIssueComment existingComment = findExistingComment( pullRequest );
+		// If the checked passed and there isn't any comment to update,
+		// just skip the comment, to avoid unnecessary noise.
+		if ( passed && existingComment == null ) {
 			return;
 		}
 
-		// Something failed; make sure to trigger a notification.
-		String checkFailureMessageIntro = "Thanks for your pull request!\n\n"
-				+ "This pull request does not follow the contribution rules. Could you have a look?\n";
-		GHIssueComment existingComment = null;
-		for ( GHIssueComment comment : pullRequest.listComments() ) {
-			if ( comment.getBody().startsWith( checkFailureMessageIntro ) ) {
-				existingComment = comment;
-				break;
-			}
-		}
-
-		StringBuilder message = new StringBuilder( checkFailureMessageIntro );
-
+		StringBuilder message = new StringBuilder( passed ? COMMENT_INTRO_PASSED : COMMENT_INTRO_FAILED );
 		outputs.forEach( output -> output.appendFailingRules( message ) );
-
-		message.append( "\n\n› This message was automatically generated." );
+		message.append( COMMENT_FOOTER );
 
 		if ( !deploymentConfig.isDryRun() ) {
 			if ( existingComment == null ) {
@@ -103,6 +100,16 @@ class CheckPullRequestContributionRules {
 		else {
 			LOG.info( "Pull request #" + pullRequest.getNumber() + " - Add comment " + message.toString() );
 		}
+	}
+
+	private GHIssueComment findExistingComment(GHPullRequest pullRequest) throws IOException {
+		for ( GHIssueComment comment : pullRequest.listComments() ) {
+			if ( comment.getBody().startsWith( COMMENT_INTRO_PASSED )
+					|| comment.getBody().startsWith( COMMENT_INTRO_FAILED ) ) {
+				return comment;
+			}
+		}
+		return null;
 	}
 
 	private List<Check> createChecks(RepositoryConfig repositoryConfig) {
