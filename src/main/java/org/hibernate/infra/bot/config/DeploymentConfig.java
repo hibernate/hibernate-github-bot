@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import io.quarkus.arc.config.ConfigProperties;
 
-@ConfigProperties
+@ConfigProperties(prefix = "hibernate-github-bot")
 public class DeploymentConfig {
 
 	Optional<Boolean> dryRun;
