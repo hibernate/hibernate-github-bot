@@ -16,6 +16,7 @@ import org.hibernate.infra.bot.check.CheckRunOutput;
 import org.hibernate.infra.bot.check.CheckRunRule;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
+import org.hibernate.infra.bot.event.CheckSuiteRequested;
 
 import org.jboss.logging.Logger;
 
@@ -37,19 +38,25 @@ class CheckPullRequestContributionRules {
 	@Inject
 	DeploymentConfig deploymentConfig;
 
-	void run(@PullRequest.Opened @PullRequest.Edited GHEventPayload.PullRequest payload,
+	void pullRequestChanged(@PullRequest.Opened @PullRequest.Edited GHEventPayload.PullRequest payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
 		checkPullRequestContributionRules( payload.getRepository(), repositoryConfig,
 				payload.getPullRequest()
 		);
 	}
 
-	void rerun(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
+	void checkRunRequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
-		checkPullRequestContributionRules( payload.getRepository(), repositoryConfig,
-				// TODO this won't work if multiple pull requests have the same HEAD.
-				payload.getCheckRun().getPullRequests().get( 0 )
-		);
+		for ( GHPullRequest pullRequest : payload.getCheckRun().getPullRequests() ) {
+			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequest );
+		}
+	}
+
+	void checkSuiteRequested(@CheckSuiteRequested GHEventPayload.CheckSuite payload,
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
+		for ( GHPullRequest pullRequest : payload.getCheckSuite().getPullRequests() ) {
+			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequest );
+		}
 	}
 
 	private void checkPullRequestContributionRules(GHRepository repository, RepositoryConfig repositoryConfig,
