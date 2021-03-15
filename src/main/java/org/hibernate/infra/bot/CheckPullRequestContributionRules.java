@@ -22,9 +22,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.event.CheckRun;
+import io.quarkiverse.githubapp.event.CheckSuite;
 import io.quarkiverse.githubapp.event.PullRequest;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHIssueComment;
+import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestCommitDetail;
 import org.kohsuke.github.GHRepository;
@@ -70,6 +72,10 @@ class CheckPullRequestContributionRules {
 	private void checkPullRequestContributionRules(GHRepository repository, RepositoryConfig repositoryConfig,
 			GHPullRequest pullRequest)
 			throws IOException {
+		if ( !shouldCheck( repository, pullRequest ) ) {
+			return;
+		}
+
 		CheckRunContext context = new CheckRunContext( deploymentConfig, repository, repositoryConfig, pullRequest );
 		List<Check> checks = createChecks( repositoryConfig );
 		List<CheckRunOutput> outputs = new ArrayList<>();
@@ -79,9 +85,9 @@ class CheckPullRequestContributionRules {
 
 		boolean passed = outputs.stream().allMatch( CheckRunOutput::passed );
 		GHIssueComment existingComment = findExistingComment( pullRequest );
-		// If the checked passed and there isn't any comment to update,
-		// just skip the comment, to avoid unnecessary noise.
-		if ( passed && existingComment == null ) {
+		// Avoid creating noisy comments for no reason, in particular if checks passed
+		// or if the pull request was already closed.
+		if ( existingComment == null && ( passed || GHIssueState.CLOSED.equals( pullRequest.getState() ) ) ) {
 			return;
 		}
 
@@ -100,6 +106,15 @@ class CheckPullRequestContributionRules {
 		else {
 			LOG.info( "Pull request #" + pullRequest.getNumber() + " - Add comment " + message.toString() );
 		}
+	}
+
+	// GitHub sometimes mentions pull requests in the payload that are definitely not related to the changes,
+	// such as very old pull requests on the branch that just got updated,
+	// or pull requests on different repositories.
+	// We have to ignore those, otherwise we'll end up creating comments on old pull requests.
+	private boolean shouldCheck(GHRepository repository, GHPullRequest pullRequest) {
+		return !GHIssueState.CLOSED.equals( pullRequest.getState() )
+				&& repository.getId() == pullRequest.getBase().getRepository().getId();
 	}
 
 	private GHIssueComment findExistingComment(GHPullRequest pullRequest) throws IOException {
