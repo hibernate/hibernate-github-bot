@@ -49,7 +49,7 @@ pipeline {
                 // Bots are hosted on the same machine as in.relation.to
                 sshagent(['jenkins.in.relation.to']) {
                     // Pull the latest version of the container image and restart the container
-                    sh 'ssh -i "${SSH_CREDS}" ${SSH_CREDS_USR}@in.relation.to sudo systemctl start podman-auto-update'
+                    sh 'ssh in.relation.to sudo systemctl start podman-auto-update'
                 }
             }
         }
