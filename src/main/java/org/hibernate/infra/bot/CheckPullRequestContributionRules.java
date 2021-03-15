@@ -38,7 +38,9 @@ class CheckPullRequestContributionRules {
 	@Inject
 	DeploymentConfig deploymentConfig;
 
-	void pullRequestChanged(@PullRequest.Opened @PullRequest.Edited GHEventPayload.PullRequest payload,
+	void pullRequestChanged(
+			@PullRequest.Opened @PullRequest.Reopened @PullRequest.Edited @PullRequest.Synchronize
+					GHEventPayload.PullRequest payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
 		checkPullRequestContributionRules( payload.getRepository(), repositoryConfig,
 				payload.getPullRequest()
