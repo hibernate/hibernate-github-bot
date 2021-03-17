@@ -150,8 +150,6 @@ class CheckPullRequestContributionRules {
 
 			output.rule( "The pull request title should contain at least 2 words to describe the change properly" )
 					.result( title != null && SPACE_PATTERN.split( title.trim() ).length >= 2 );
-			output.rule( "The pull request title should not end with a dot" )
-					.result( title == null || !title.endsWith( "." ) );
 			output.rule( "The pull request title should not end with an ellipsis (make sure the title is complete)" )
 					.result( title == null || !title.endsWith( "…" ) );
 		}
