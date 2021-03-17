@@ -16,7 +16,6 @@ import org.hibernate.infra.bot.check.CheckRunOutput;
 import org.hibernate.infra.bot.check.CheckRunRule;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
-import org.hibernate.infra.bot.event.CheckSuiteRequested;
 
 import org.jboss.logging.Logger;
 
@@ -62,7 +61,7 @@ class CheckPullRequestContributionRules {
 		}
 	}
 
-	void checkSuiteRequested(@CheckSuiteRequested @CheckSuite.Rerequested GHEventPayload.CheckSuite payload,
+	void checkSuiteRequested(@CheckSuite.Requested @CheckSuite.Rerequested GHEventPayload.CheckSuite payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
 		for ( GHPullRequest pullRequest : payload.getCheckSuite().getPullRequests() ) {
 			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequest );
