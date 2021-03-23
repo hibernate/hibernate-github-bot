@@ -69,3 +69,5 @@ You can run the bot locally by:
 The `main` branch is automatically deployed in production through
 [this Jenkins job](https://ci.hibernate.org/job/hibernate-github-bot/),
 configured through the `Jenkinsfile` at the root of this repository.
+
+Container images are pushed to [this quay.io repository](https://quay.io/repository/hibernate/hibernate-github-bot).
