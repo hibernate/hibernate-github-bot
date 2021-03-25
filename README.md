@@ -73,3 +73,11 @@ The `production` branch is automatically deployed in production through
 configured through the `Jenkinsfile` at the root of this repository.
 
 Container images are pushed to [this quay.io repository](https://quay.io/repository/hibernate/hibernate-github-bot).
+
+### Maintenance
+
+You can check the current health of the bot like this:
+
+```shell
+curl https://infra.hibernate.org/bot/github/q/health | jq
+```
