@@ -19,13 +19,14 @@ pipeline {
             when {
                 beforeAgent true
                 not { changeRequest() }
+                branch 'production'
             }
             environment {
                 QUAY_CREDS = credentials('hibernate.quay.io')
             }
             steps {
                 script {
-                    if ( env.BRANCH_NAME == 'main' ) {
+                    if ( env.BRANCH_NAME == 'production' ) {
                         env.QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS = 'latest'
                     }
                     else {
@@ -43,7 +44,7 @@ pipeline {
             when {
                 beforeAgent true
                 not { changeRequest() }
-                branch 'main'
+                branch 'production'
             }
             steps {
                 // Bots are hosted on the same machine as in.relation.to
