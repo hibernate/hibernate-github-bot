@@ -14,7 +14,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus-github-app.version>1.0.0</quarkus-github-app.version>
     <quarkus.version>1.13.0.Final</quarkus.version>
-    <quarkus-plugin.version>${quarkus.version}</quarkus-plugin.version>
+    <quarkus-plugin.version>1.13.1.Final</quarkus-plugin.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>${quarkus.version}</quarkus.platform.version>
