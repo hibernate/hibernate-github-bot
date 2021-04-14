@@ -34,7 +34,7 @@
     <dependency>
       <groupId>io.quarkiverse.githubapp</groupId>
       <artifactId>quarkus-github-app</artifactId>
-      <version>${quarkus.version}</version>
+      <version>${quarkus-github-app.version}</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
