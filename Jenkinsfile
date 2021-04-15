@@ -1,3 +1,5 @@
+@Library('hibernate-jenkins-pipeline-helpers@1.5') _
+
 pipeline {
     agent {
         label 'Worker'
@@ -53,6 +55,12 @@ pipeline {
                     sh 'ssh in.relation.to sudo systemctl start podman-auto-update'
                 }
             }
+        }
+    }
+    post {
+        always {
+            // Space-separated
+            notifyBuildResult maintainers: 'yoann@hibernate.org'
         }
     }
 }
