@@ -66,9 +66,9 @@ You can run the bot locally by:
 
 ### Deployment
 
-Just push to the `production` branch.
+Just push to the `main` branch.
 
-The `production` branch is automatically deployed in production through
+The `main` branch is automatically deployed in production through
 [this Jenkins job](https://ci.hibernate.org/job/hibernate-github-bot/),
 configured through the `Jenkinsfile` at the root of this repository.
 
