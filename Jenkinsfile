@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     if ( env.BRANCH_NAME == 'main' ) {
-                        env.QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS = 'main, latest'
+                        env.QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS = 'main,latest'
                     }
                     else {
                         env.QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS = env.BRANCH_NAME
