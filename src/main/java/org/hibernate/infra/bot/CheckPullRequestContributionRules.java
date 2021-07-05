@@ -30,7 +30,7 @@ import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestCommitDetail;
 import org.kohsuke.github.GHRepository;
 
-class CheckPullRequestContributionRules {
+public class CheckPullRequestContributionRules {
 
 	private static final Logger LOG = Logger.getLogger( CheckPullRequestContributionRules.class );
 
