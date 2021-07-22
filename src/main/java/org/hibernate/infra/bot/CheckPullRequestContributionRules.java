@@ -195,7 +195,7 @@ public class CheckPullRequestContributionRules {
 			}
 
 			CheckRunRule pullRequestRule = output.rule(
-					"All JIRA issues addressed by commits should be mentioned in the PR title or body" );
+					"The PR title or body should list the keys of all JIRA issues mentioned in the commits" );
 			List<String> issueKeysNotMentionedInPullRequest = issueKeys.stream()
 					.filter( issueKey -> !title.contains( issueKey ) && !body.contains( issueKey ) )
 					.collect( Collectors.toList() );
@@ -203,7 +203,7 @@ public class CheckPullRequestContributionRules {
 				pullRequestRule.passed();
 			}
 			else {
-				pullRequestRule.failed( "Issues not mentioned: " + issueKeysNotMentionedInPullRequest );
+				pullRequestRule.failed( "Issue keys mentioned in commits but missing from the PR title or body: " + issueKeysNotMentionedInPullRequest );
 			}
 		}
 	}
