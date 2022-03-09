@@ -2,18 +2,15 @@ package org.hibernate.infra.bot.config;
 
 import java.util.Optional;
 
-import io.quarkus.arc.config.ConfigProperties;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigProperties(prefix = "hibernate-github-bot")
-public class DeploymentConfig {
+@ConfigMapping(prefix = "hibernate-github-bot")
+public interface DeploymentConfig {
 
-	Optional<Boolean> dryRun;
+	Optional<Boolean> dryRun();
 
-	public void setDryRun(Optional<Boolean> dryRun) {
-		this.dryRun = dryRun;
-	}
-
-	public boolean isDryRun() {
+	public default boolean isDryRun() {
+		Optional<Boolean> dryRun = dryRun();
 		return dryRun.isPresent() && dryRun.get();
 	}
 }
