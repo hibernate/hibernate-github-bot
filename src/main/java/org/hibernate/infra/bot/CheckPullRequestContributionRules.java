@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -16,6 +15,7 @@ import org.hibernate.infra.bot.check.CheckRunOutput;
 import org.hibernate.infra.bot.check.CheckRunRule;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
+import org.hibernate.infra.bot.util.CommitMessages;
 
 import org.jboss.logging.Logger;
 
@@ -173,14 +173,12 @@ public class CheckPullRequestContributionRules {
 			Set<String> commitsWithMessageNotStartingWithIssueKey = new LinkedHashSet<>();
 			for ( GHPullRequestCommitDetail commitDetails : context.pullRequest.listCommits() ) {
 				GHPullRequestCommitDetail.Commit commit = commitDetails.getCommit();
-				String message = commit.getMessage();
-				Matcher commitMessageIssueKeyMatcher = issueKeyPattern.matcher( message );
-				int issueKeyIndex = commitMessageIssueKeyMatcher.find() ? commitMessageIssueKeyMatcher.start() : -1;
-				if ( issueKeyIndex == 0 ) {
-					issueKeys.add( commitMessageIssueKeyMatcher.group() );
+				List<String> commitIssueKeys = CommitMessages.extractIssueKeys( issueKeyPattern, commit.getMessage() );
+				if ( commitIssueKeys.isEmpty() ) {
+					commitsWithMessageNotStartingWithIssueKey.add( commitDetails.getSha() );
 				}
 				else {
-					commitsWithMessageNotStartingWithIssueKey.add( commitDetails.getSha() );
+					issueKeys.addAll( commitIssueKeys );
 				}
 			}
 
