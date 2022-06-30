@@ -58,7 +58,6 @@ pipeline {
     }
     post {
         always {
-            // Space-separated
             notifyBuildResult maintainers: 'yoann@hibernate.org'
         }
     }
