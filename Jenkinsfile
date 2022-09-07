@@ -48,10 +48,13 @@ pipeline {
                 branch 'main'
             }
             steps {
-                // Bots are hosted on the same machine as in.relation.to
-                sshagent(['jenkins.in.relation.to']) {
-                    // Pull the latest version of the container image and restart the container
-                    sh 'ssh in.relation.to sudo systemctl start podman-auto-update'
+                configFileProvider([configFile(fileId: 'release.config.ssh', targetLocation: env.HOME + '/.ssh/config'),
+                                    configFile(fileId: 'release.config.ssh.knownhosts', targetLocation: env.HOME + '/.ssh/known_hosts')]) {
+                    // Bots are hosted on the same machine as in.relation.to
+                    sshagent(['jenkins.in.relation.to']) {
+                        // Pull the latest version of the container image and restart the container
+                        sh 'ssh in.relation.to sudo systemctl start podman-auto-update'
+                    }
                 }
             }
         }
