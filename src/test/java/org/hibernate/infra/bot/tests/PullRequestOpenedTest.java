@@ -43,7 +43,7 @@ public class PullRequestOpenedTest {
 									+ "  projectKey: \"HSEARCH\"\n"
 					);
 
-					GHRepository repoMock = mocks.repository( "hibernate-github-bot-playground" );
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
 
 					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
@@ -83,7 +83,7 @@ public class PullRequestOpenedTest {
 									+ "  projectKey: \"HSEARCH\"\n"
 					);
 
-					GHRepository repoMock = mocks.repository( "hibernate-github-bot-playground" );
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
 
 					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
@@ -125,7 +125,7 @@ public class PullRequestOpenedTest {
 									+ "  projectKey: \"HSEARCH\"\n"
 					);
 
-					GHRepository repoMock = mocks.repository( "hibernate-github-bot-playground" );
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
 
 					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
@@ -167,7 +167,7 @@ public class PullRequestOpenedTest {
 									+ "  projectKey: \"HSEARCH\"\n"
 					);
 
-					GHRepository repoMock = mocks.repository( "hibernate-github-bot-playground" );
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
 
 					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
