@@ -6,6 +6,7 @@ import java.util.Date;
 
 import org.jboss.logging.Logger;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.kohsuke.github.GHCheckRun;
 import org.kohsuke.github.GHCheckRunBuilder;
 
@@ -41,7 +42,31 @@ public final class CheckRun {
 	CheckRunOutput perform() throws IOException {
 		CheckRunOutput output = new CheckRunOutput( id, check.name );
 
-		check.perform( context, output );
+		try {
+			check.perform( context, output );
+		}
+		catch ( Exception e ) {
+			if ( !context.deploymentConfig.isDryRun() ) {
+				context.repository.updateCheckRun( id )
+						.withCompletedAt( Date.from( Instant.now() ) )
+						.withStatus( GHCheckRun.Status.COMPLETED )
+						.withConclusion( GHCheckRun.Conclusion.FAILURE )
+						.add( new GHCheckRunBuilder.Output(
+								check.name + " failed with exception",
+								"```\n" + ExceptionUtils.getStackTrace( e ) + "\n```"
+						) )
+						.create();
+			}
+			else {
+				LOG.error( "Pull request #" + context.pullRequest.getNumber() + " - check run '" + check.name
+						+ "' failed", e );
+			}
+
+			output.rule( check.name )
+					.failed( "Failed with exception " + e.getClass().getName() + ": " + e.getMessage() );
+
+			return output;
+		}
 
 		GHCheckRun.Conclusion conclusion;
 		if ( output.passed() ) {
