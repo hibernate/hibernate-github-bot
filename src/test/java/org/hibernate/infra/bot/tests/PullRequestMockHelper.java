@@ -25,25 +25,16 @@ public class PullRequestMockHelper {
 		GHCommitPointer baseMock = stub( GHCommitPointer.class );
 		when( pullRequestMock.getBase() ).thenReturn( baseMock );
 		when( baseMock.getRepository() ).thenReturn( repoMock );
-		return new PullRequestMockHelper( context, pullRequestMock, repoMock );
+		return new PullRequestMockHelper( pullRequestMock );
 	}
 
-	private final GitHubMockContext context;
 	private final GHPullRequest pullRequestMock;
-	private final GHRepository repoMock;
 
 	private List<GHIssueComment> commentsMocks;
 	private List<GHPullRequestCommitDetail> commitDetailsMocks;
 
-	private PullRequestMockHelper(GitHubMockContext context,
-			GHPullRequest pullRequestMock, GHRepository repoMock) {
-		this.context = context;
+	private PullRequestMockHelper(GHPullRequest pullRequestMock) {
 		this.pullRequestMock = pullRequestMock;
-		this.repoMock = repoMock;
-	}
-
-	public GHPullRequest pullRequestMock() {
-		return pullRequestMock;
 	}
 
 	public PullRequestMockHelper commit(String message) {
