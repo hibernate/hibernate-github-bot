@@ -71,7 +71,7 @@ public class PullRequestMockHelper {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T> PagedIterable<T> mockPagedIterable(List<T> contentMocks) {
+	public static <T> PagedIterable<T> mockPagedIterable(List<T> contentMocks) {
 		PagedIterable<T> iterableMock = mock( PagedIterable.class );
 		when( iterableMock.iterator() ).thenAnswer( ignored -> {
 			PagedIterator<T> iteratorMock = mock( PagedIterator.class );
