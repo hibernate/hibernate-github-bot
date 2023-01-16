@@ -6,7 +6,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.hibernate.infra.bot.check.Check;
@@ -36,10 +35,15 @@ public class CheckPullRequestContributionRules {
 
 	private static final Pattern SPACE_PATTERN = Pattern.compile( "\\s+" );
 
-	private static final String COMMENT_INTRO_PASSED = "Thanks for your pull request!\n\n"
-			+ "This pull request appears to follow the contribution rules.";
-	private static final String COMMENT_INTRO_FAILED = "Thanks for your pull request!\n\n"
-			+ "This pull request does not follow the contribution rules. Could you have a look?\n";
+	private static final String COMMENT_INTRO_PASSED = """
+			Thanks for your pull request!
+
+			This pull request appears to follow the contribution rules.""";
+	private static final String COMMENT_INTRO_FAILED = """
+			Thanks for your pull request!
+
+			This pull request does not follow the contribution rules. Could you have a look?
+			""";
 	private static final String COMMENT_FOOTER = "\n\n› This message was automatically generated.";
 
 	@Inject
@@ -197,7 +201,7 @@ public class CheckPullRequestContributionRules {
 			List<String> issueKeysNotMentionedInPullRequest = issueKeys.stream()
 					.filter( issueKey -> ( title == null || !title.contains( issueKey ) )
 							&& ( body == null || !body.contains( issueKey ) ) )
-					.collect( Collectors.toList() );
+					.toList();
 			if ( issueKeysNotMentionedInPullRequest.isEmpty() ) {
 				pullRequestRule.passed();
 			}

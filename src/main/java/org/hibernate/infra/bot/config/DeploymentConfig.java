@@ -9,7 +9,7 @@ public interface DeploymentConfig {
 
 	Optional<Boolean> dryRun();
 
-	public default boolean isDryRun() {
+	default boolean isDryRun() {
 		Optional<Boolean> dryRun = dryRun();
 		return dryRun.isPresent() && dryRun.get();
 	}
