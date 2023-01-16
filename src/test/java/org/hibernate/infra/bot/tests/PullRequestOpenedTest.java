@@ -198,6 +198,49 @@ public class PullRequestOpenedTest {
 				} );
 	}
 
+	@Test
+	void titleOrBodyNotMentioningCommitIssueKey_nullBody() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFileFromString(
+							"hibernate-github-bot.yml",
+							"jira:\n"
+									+ "  projectKey: \"HSEARCH\"\n"
+					);
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( 344815557L );
+
+					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+							.commit( "HSEARCH-1111 Commit 1" )
+							.commit( "HSEARCH-1112 Commit 2" )
+							.comment( "Some comment" )
+							.comment( "Some other comment" );
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-no-body.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
+					verify( prMock ).comment( messageCaptor.capture() );
+					assertThat( messageCaptor.getValue() )
+							.isEqualTo( "Thanks for your pull request!\n"
+									+ "\n"
+									+ "This pull request does not follow the contribution rules. Could you have a look?\n"
+									+ "\n"
+									+ "❌ The PR title or body should list the keys of all JIRA issues mentioned in the commits\n"
+									+ "    ↳ Issue keys mentioned in commits but missing from the PR title or body: [HSEARCH-1112]\n"
+									+ "\n"
+									+ "› This message was automatically generated." );
+					verifyNoMoreInteractions( mocks.ghObjects() );
+				} );
+	}
+
+
 	private GHCheckRunBuilder mockCheckRunBuilder() {
 		return mock( GHCheckRunBuilder.class, withSettings().defaultAnswer( Answers.RETURNS_SELF ) );
 	}
