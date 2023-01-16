@@ -37,13 +37,11 @@ public class PullRequestOpenedTest {
 	void titleEndsWithEllipsis() throws IOException {
 		given()
 				.github( mocks -> {
-					mocks.configFileFromString(
-							"hibernate-github-bot.yml",
-							"""
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
 									jira:
 									  projectKey: "HSEARCH"
-									"""
-					);
+									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
@@ -80,13 +78,11 @@ public class PullRequestOpenedTest {
 	void commitMessageNotStartingWithIssueKey() throws IOException {
 		given()
 				.github( mocks -> {
-					mocks.configFileFromString(
-							"hibernate-github-bot.yml",
-							"""
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
 									jira:
 									  projectKey: "HSEARCH"
-									"""
-					);
+									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
@@ -125,13 +121,11 @@ public class PullRequestOpenedTest {
 	void titleOrBodyNotMentioningCommitIssueKey() throws IOException {
 		given()
 				.github( mocks -> {
-					mocks.configFileFromString(
-							"hibernate-github-bot.yml",
-							"""
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
 									jira:
 									  projectKey: "HSEARCH"
-									"""
-					);
+									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
@@ -170,13 +164,11 @@ public class PullRequestOpenedTest {
 	void titleOrBodyNotMentioningCommitIssueKey_multipleIssuesInSingleCommit() throws IOException {
 		given()
 				.github( mocks -> {
-					mocks.configFileFromString(
-							"hibernate-github-bot.yml",
-							"""
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
 									jira:
 									  projectKey: "HSEARCH"
-									"""
-					);
+									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );
@@ -214,13 +206,11 @@ public class PullRequestOpenedTest {
 	void titleOrBodyNotMentioningCommitIssueKey_nullBody() throws IOException {
 		given()
 				.github( mocks -> {
-					mocks.configFileFromString(
-							"hibernate-github-bot.yml",
-							"""
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
 									jira:
 									  projectKey: "HSEARCH"
-									"""
-					);
+									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
 					when( repoMock.getId() ).thenReturn( 344815557L );

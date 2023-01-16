@@ -15,8 +15,6 @@ public final class CheckRun {
 
 	static CheckRun create(CheckRunContext context, Check check) throws IOException {
 		if ( !context.deploymentConfig.isDryRun() ) {
-			// Yes it's deprecated, but no there isn't any other way to do this.
-			// I believe it's just experimental?
 			GHCheckRun checkRun = context.repository.createCheckRun(
 					check.name, context.pullRequest.getHead().getSha() )
 					.withStartedAt( Date.from( Instant.now() ) )
@@ -54,8 +52,6 @@ public final class CheckRun {
 		}
 
 		if ( !context.deploymentConfig.isDryRun() ) {
-			// Yes it's deprecated, but no there isn't any other way to do this.
-			// I believe it's just experimental?
 			context.repository.updateCheckRun( id )
 					.withCompletedAt( Date.from( Instant.now() ) )
 					.withStatus( GHCheckRun.Status.COMPLETED )
