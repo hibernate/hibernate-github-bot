@@ -195,7 +195,8 @@ public class CheckPullRequestContributionRules {
 			CheckRunRule pullRequestRule = output.rule(
 					"The PR title or body should list the keys of all JIRA issues mentioned in the commits" );
 			List<String> issueKeysNotMentionedInPullRequest = issueKeys.stream()
-					.filter( issueKey -> !title.contains( issueKey ) && !body.contains( issueKey ) )
+					.filter( issueKey -> ( title == null || !title.contains( issueKey ) )
+							&& ( body == null || !body.contains( issueKey ) ) )
 					.collect( Collectors.toList() );
 			if ( issueKeysNotMentionedInPullRequest.isEmpty() ) {
 				pullRequestRule.passed();
