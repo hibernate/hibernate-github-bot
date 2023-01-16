@@ -39,8 +39,10 @@ public class PullRequestOpenedTest {
 				.github( mocks -> {
 					mocks.configFileFromString(
 							"hibernate-github-bot.yml",
-							"jira:\n"
-									+ "  projectKey: \"HSEARCH\"\n"
+							"""
+									jira:
+									  projectKey: "HSEARCH"
+									"""
 					);
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
@@ -62,13 +64,14 @@ public class PullRequestOpenedTest {
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
-							.isEqualTo( "Thanks for your pull request!\n"
-									+ "\n"
-									+ "This pull request does not follow the contribution rules. Could you have a look?\n"
-									+ "\n"
-									+ "❌ The pull request title should not end with an ellipsis (make sure the title is complete)\n"
-									+ "\n"
-									+ "› This message was automatically generated." );
+							.isEqualTo( """
+									Thanks for your pull request!
+
+									This pull request does not follow the contribution rules. Could you have a look?
+
+									❌ The pull request title should not end with an ellipsis (make sure the title is complete)
+
+									› This message was automatically generated.""" );
 					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );
 	}
@@ -79,8 +82,10 @@ public class PullRequestOpenedTest {
 				.github( mocks -> {
 					mocks.configFileFromString(
 							"hibernate-github-bot.yml",
-							"jira:\n"
-									+ "  projectKey: \"HSEARCH\"\n"
+							"""
+									jira:
+									  projectKey: "HSEARCH"
+									"""
 					);
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
@@ -103,14 +108,15 @@ public class PullRequestOpenedTest {
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
-							.isEqualTo( "Thanks for your pull request!\n"
-									+ "\n"
-									+ "This pull request does not follow the contribution rules. Could you have a look?\n"
-									+ "\n"
-									+ "❌ All commit messages should start with a JIRA issue key matching pattern `HSEARCH-\\d+`\n"
-									+ "    ↳ Offending commits: [06b6d27ba19615d14cdcd509d9eb3334e5571bf2]\n"
-									+ "\n"
-									+ "› This message was automatically generated." );
+							.isEqualTo( """
+									Thanks for your pull request!
+
+									This pull request does not follow the contribution rules. Could you have a look?
+
+									❌ All commit messages should start with a JIRA issue key matching pattern `HSEARCH-\\d+`
+									    ↳ Offending commits: [06b6d27ba19615d14cdcd509d9eb3334e5571bf2]
+
+									› This message was automatically generated.""" );
 					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );
 	}
@@ -121,8 +127,10 @@ public class PullRequestOpenedTest {
 				.github( mocks -> {
 					mocks.configFileFromString(
 							"hibernate-github-bot.yml",
-							"jira:\n"
-									+ "  projectKey: \"HSEARCH\"\n"
+							"""
+									jira:
+									  projectKey: "HSEARCH"
+									"""
 					);
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
@@ -145,14 +153,15 @@ public class PullRequestOpenedTest {
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
-							.isEqualTo( "Thanks for your pull request!\n"
-									+ "\n"
-									+ "This pull request does not follow the contribution rules. Could you have a look?\n"
-									+ "\n"
-									+ "❌ The PR title or body should list the keys of all JIRA issues mentioned in the commits\n"
-									+ "    ↳ Issue keys mentioned in commits but missing from the PR title or body: [HSEARCH-1112]\n"
-									+ "\n"
-									+ "› This message was automatically generated." );
+							.isEqualTo( """
+									Thanks for your pull request!
+
+									This pull request does not follow the contribution rules. Could you have a look?
+
+									❌ The PR title or body should list the keys of all JIRA issues mentioned in the commits
+									    ↳ Issue keys mentioned in commits but missing from the PR title or body: [HSEARCH-1112]
+
+									› This message was automatically generated.""" );
 					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );
 	}
@@ -163,8 +172,10 @@ public class PullRequestOpenedTest {
 				.github( mocks -> {
 					mocks.configFileFromString(
 							"hibernate-github-bot.yml",
-							"jira:\n"
-									+ "  projectKey: \"HSEARCH\"\n"
+							"""
+									jira:
+									  projectKey: "HSEARCH"
+									"""
 					);
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
@@ -186,14 +197,15 @@ public class PullRequestOpenedTest {
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
-							.isEqualTo( "Thanks for your pull request!\n"
-									+ "\n"
-									+ "This pull request does not follow the contribution rules. Could you have a look?\n"
-									+ "\n"
-									+ "❌ The PR title or body should list the keys of all JIRA issues mentioned in the commits\n"
-									+ "    ↳ Issue keys mentioned in commits but missing from the PR title or body: [HSEARCH-1112]\n"
-									+ "\n"
-									+ "› This message was automatically generated." );
+							.isEqualTo( """
+									Thanks for your pull request!
+
+									This pull request does not follow the contribution rules. Could you have a look?
+
+									❌ The PR title or body should list the keys of all JIRA issues mentioned in the commits
+									    ↳ Issue keys mentioned in commits but missing from the PR title or body: [HSEARCH-1112]
+
+									› This message was automatically generated.""" );
 					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );
 	}
@@ -204,8 +216,10 @@ public class PullRequestOpenedTest {
 				.github( mocks -> {
 					mocks.configFileFromString(
 							"hibernate-github-bot.yml",
-							"jira:\n"
-									+ "  projectKey: \"HSEARCH\"\n"
+							"""
+									jira:
+									  projectKey: "HSEARCH"
+									"""
 					);
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
@@ -228,14 +242,15 @@ public class PullRequestOpenedTest {
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
-							.isEqualTo( "Thanks for your pull request!\n"
-									+ "\n"
-									+ "This pull request does not follow the contribution rules. Could you have a look?\n"
-									+ "\n"
-									+ "❌ The PR title or body should list the keys of all JIRA issues mentioned in the commits\n"
-									+ "    ↳ Issue keys mentioned in commits but missing from the PR title or body: [HSEARCH-1112]\n"
-									+ "\n"
-									+ "› This message was automatically generated." );
+							.isEqualTo( """
+									Thanks for your pull request!
+
+									This pull request does not follow the contribution rules. Could you have a look?
+
+									❌ The PR title or body should list the keys of all JIRA issues mentioned in the commits
+									    ↳ Issue keys mentioned in commits but missing from the PR title or body: [HSEARCH-1112]
+
+									› This message was automatically generated.""" );
 					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );
 	}

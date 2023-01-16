@@ -2,7 +2,6 @@ package org.hibernate.infra.bot.check;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class CheckRunOutput {
 
@@ -26,8 +25,8 @@ public final class CheckRunOutput {
 		return rules.stream().allMatch( r -> r.passed );
 	}
 
-	public final String title() {
-		List<CheckRunRule> failingRules = rules.stream().filter( r -> !r.passed ).collect( Collectors.toList() );
+	public String title() {
+		List<CheckRunRule> failingRules = rules.stream().filter( r -> !r.passed ).toList();
 		if ( failingRules.isEmpty() ) {
 			return "All rules passed";
 		}
@@ -39,7 +38,7 @@ public final class CheckRunOutput {
 		}
 	}
 
-	public final String summary() {
+	public String summary() {
 		StringBuilder builder = new StringBuilder();
 		appendRules( builder, true );
 		return builder.toString();

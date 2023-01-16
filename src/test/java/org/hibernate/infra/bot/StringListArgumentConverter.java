@@ -15,13 +15,12 @@ public class StringListArgumentConverter extends SimpleArgumentConverter {
 		if ( source == null ) {
 			return Collections.emptyList();
 		}
-		if ( !( source instanceof String ) ) {
+		if ( !( source instanceof String sourceString ) ) {
 			throw new ArgumentConversionException( "Can only convert from String" );
 		}
 		if ( targetType != List.class ) {
 			throw new ArgumentConversionException( "Can only convert to List<String>" );
 		}
-		String sourceString = (String) source;
 		if ( sourceString.isEmpty() ) {
 			return Collections.emptyList();
 		}
