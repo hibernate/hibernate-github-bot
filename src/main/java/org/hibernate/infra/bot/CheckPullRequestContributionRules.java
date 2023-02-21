@@ -6,7 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.infra.bot.check.Check;
 import org.hibernate.infra.bot.check.CheckRunContext;
