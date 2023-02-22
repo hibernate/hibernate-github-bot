@@ -4,8 +4,30 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.acme</groupId>
   <artifactId>hibernate-github-bot</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>${revision}</version>
+
+  <name>Hibernate GitHub Bot</name>
+  <url>https://github.com/hibernate/hibernate-github-bot</url>
+  <inceptionYear>2021</inceptionYear>
+
+  <organization>
+    <name>Hibernate</name>
+    <url>http://www.hibernate.org</url>
+  </organization>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/hibernate/hibernate-github-bot/issues</url>
+  </issueManagement>
+  <scm>
+    <connection>scm:git:git@github.com:hibernate/hibernate-github-bot.git</connection>
+    <developerConnection>scm:git:git@github.com:hibernate/hibernate-github-bot.git</developerConnection>
+    <url>https://github.com/hibernate/hibernate-github-bot</url>
+    <tag>HEAD</tag>
+  </scm>
+
   <properties>
+    <revision>999-SNAPSHOT</revision>
     <compiler-plugin.version>3.10.1</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
     <maven.compiler.source>17</maven.compiler.source>
@@ -19,6 +41,7 @@
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <surefire-plugin.version>3.0.0-M9</surefire-plugin.version>
     <assertj.version>3.24.2</assertj.version>
+    <version.buildnumber.plugin>3.0.0</version.buildnumber.plugin>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -80,10 +103,36 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>${version.buildnumber.plugin}</version>
+        <executions>
+          <execution>
+            <id>get-scm-revision</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+            <configuration>
+              <doCheck>false</doCheck>
+              <doUpdate>false</doUpdate>
+              <revisionOnScmFailure>UNKNOWN</revisionOnScmFailure>
+              <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+              <shortRevisionLength>7</shortRevisionLength>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus.version}</version>
         <extensions>true</extensions>
+        <configuration>
+          <systemProperties>
+            <buildNumber>${buildNumber}</buildNumber>
+          </systemProperties>
+        </configuration>
         <executions>
           <execution>
             <goals>
