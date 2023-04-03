@@ -41,7 +41,6 @@
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <surefire-plugin.version>3.0.0</surefire-plugin.version>
     <assertj.version>3.24.2</assertj.version>
-    <version.buildnumber.plugin>3.0.0</version.buildnumber.plugin>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -81,6 +80,10 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-info</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-health</artifactId>
     </dependency>
     <dependency>
@@ -103,35 +106,11 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>buildnumber-maven-plugin</artifactId>
-        <version>${version.buildnumber.plugin}</version>
-        <executions>
-          <execution>
-            <id>get-scm-revision</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>create</goal>
-            </goals>
-            <configuration>
-              <doCheck>false</doCheck>
-              <doUpdate>false</doUpdate>
-              <revisionOnScmFailure>UNKNOWN</revisionOnScmFailure>
-              <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
-              <shortRevisionLength>7</shortRevisionLength>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus.version}</version>
         <extensions>true</extensions>
         <configuration>
-          <systemProperties>
-            <buildNumber>${buildNumber}</buildNumber>
-          </systemProperties>
         </configuration>
         <executions>
           <execution>
