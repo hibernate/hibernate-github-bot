@@ -135,8 +135,10 @@ public class CheckPullRequestContributionRules {
 		checks.add( new TitleCheck() );
 
 		if ( repositoryConfig != null && repositoryConfig.jira != null ) {
+			final boolean checkMentions = repositoryConfig.jira.getInsertLinksInPullRequests().isEmpty()
+					|| repositoryConfig.jira.getInsertLinksInPullRequests().get().equals( Boolean.FALSE );
 			repositoryConfig.jira.getIssueKeyPattern()
-					.ifPresent( issueKeyPattern -> checks.add( new JiraIssuesCheck( issueKeyPattern ) ) );
+					.ifPresent( issueKeyPattern -> checks.add( new JiraIssuesCheck( issueKeyPattern, checkMentions ) ) );
 		}
 
 		return checks;
@@ -163,9 +165,12 @@ public class CheckPullRequestContributionRules {
 
 		private final Pattern issueKeyPattern;
 
-		JiraIssuesCheck(Pattern issueKeyPattern) {
+		private final boolean checkMentions;
+
+		JiraIssuesCheck(Pattern issueKeyPattern, boolean checkMentions) {
 			super( "Contribution — JIRA issues" );
 			this.issueKeyPattern = issueKeyPattern;
+			this.checkMentions = checkMentions;
 		}
 
 		@Override
@@ -196,17 +201,19 @@ public class CheckPullRequestContributionRules {
 				commitRule.failed( "Offending commits: " + commitsWithMessageNotStartingWithIssueKey );
 			}
 
-			CheckRunRule pullRequestRule = output.rule(
-					"The PR title or body should list the keys of all JIRA issues mentioned in the commits" );
-			List<String> issueKeysNotMentionedInPullRequest = issueKeys.stream()
-					.filter( issueKey -> ( title == null || !title.contains( issueKey ) )
-							&& ( body == null || !body.contains( issueKey ) ) )
-					.toList();
-			if ( issueKeysNotMentionedInPullRequest.isEmpty() ) {
-				pullRequestRule.passed();
-			}
-			else {
-				pullRequestRule.failed( "Issue keys mentioned in commits but missing from the PR title or body: " + issueKeysNotMentionedInPullRequest );
+			if ( checkMentions ) {
+				// We only need to check mentions if automatic body editing is disabled
+				CheckRunRule pullRequestRule = output.rule(
+						"The PR title or body should list the keys of all JIRA issues mentioned in the commits");
+				List<String> issueKeysNotMentionedInPullRequest = issueKeys.stream()
+						.filter(issueKey -> (title == null || !title.contains(issueKey))
+								&& (body == null || !body.contains(issueKey)))
+						.toList();
+				if (issueKeysNotMentionedInPullRequest.isEmpty()) {
+					pullRequestRule.passed();
+				} else {
+					pullRequestRule.failed("Issue keys mentioned in commits but missing from the PR title or body: " + issueKeysNotMentionedInPullRequest);
+				}
 			}
 		}
 	}
