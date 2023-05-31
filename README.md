@@ -21,6 +21,9 @@ This includes:
 * Proper formatting of commits: every commit message must start with the key of a JIRA ticket.
 * Etc.
 
+The bot can also be configured to automatically add links to JIRA issues in PR descriptions. When this is enabled
+links to JIRA tickets will be appended at the bottom of the PR body.
+
 ## Configuration
 
 ### Enabling the bot in a new repository
@@ -32,12 +35,13 @@ and add your repository under "Repository access".
 
 If you wish to enable the JIRA-related features as well,
 create the file `.github/hibernate-github-bot.yml` in default branch of your repository,
-will the following content:
+with the following content:
 
 ```yaml
 ---
 jira:
   projectKey: "HSEARCH" # Change to whatever your project key is
+  insertLinksInPullRequests: true # This is optional and enables automatically adding issue links to PR descriptions
 ```
 
 ### Altering the infrastructure
