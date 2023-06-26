@@ -1,9 +1,9 @@
 package org.hibernate.infra.bot.config;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-
-import javax.swing.text.html.Option;
 
 import org.hibernate.infra.bot.util.Patterns;
 
@@ -15,6 +15,8 @@ public class RepositoryConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
 
 		private Optional<Boolean> insertLinksInPullRequests = Optional.empty();
+
+		private List<IgnoreConfiguration> ignore = Collections.emptyList();
 
 		public void setProjectKey(String key) {
 			issueKeyPattern = Optional.of( Patterns.compile( key + "-\\d+" ) );
@@ -30,6 +32,36 @@ public class RepositoryConfig {
 
 		public Optional<Boolean> getInsertLinksInPullRequests() {
 			return insertLinksInPullRequests;
+		}
+
+		public List<IgnoreConfiguration> getIgnore() {
+			return ignore;
+		}
+
+		public void setIgnore(List<IgnoreConfiguration> ignore) {
+			this.ignore = ignore;
+		}
+	}
+
+	public static class IgnoreConfiguration {
+
+		private String user;
+		private Pattern titlePattern;
+
+		public String getUser() {
+			return user;
+		}
+
+		public void setUser(String user) {
+			this.user = user;
+		}
+
+		public Pattern getTitlePattern() {
+			return titlePattern;
+		}
+
+		public void setTitlePattern(String titlePattern) {
+			this.titlePattern = Pattern.compile( titlePattern );
 		}
 	}
 }

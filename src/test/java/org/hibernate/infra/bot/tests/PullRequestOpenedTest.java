@@ -3,6 +3,7 @@ package org.hibernate.infra.bot.tests;
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.infra.bot.tests.PullRequestMockHelper.mockPagedIterable;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,7 @@ import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHUser;
 import org.kohsuke.github.PagedIterable;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
@@ -505,6 +508,129 @@ public class PullRequestOpenedTest {
 					GHPullRequest prMock = mocks.pullRequest( 585627026 );
 					// setBody should never be invoked since the PR's body already contains both issue keys
 					verify( prMock, times( 0 ) ).setBody( null );
+				} );
+	}
+
+	@Test
+	void dependabotOpensBuildDependencyUpgradePullRequest() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									jira:
+									  projectKey: "HSEARCH"
+									  ignore:
+									    - user: dependabot[bot]
+									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
+									""" );
+
+					var repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( 344815557L );
+
+					// we don't need to mock commits, since we won't reach them, we will return fast as soon as we
+					// determine that the PR was created by dependabot, and it is a build dependency upgrade.
+
+					// mock no comments so when bot checks if it needs to modify any previous comments - it won't fail
+					var pullRequestMock = mocks.pullRequest( 585627026L );
+					PagedIterable<GHIssueComment> commentIterableMock = mockPagedIterable( Collections.emptyList() );
+					when( pullRequestMock.listComments() ).thenReturn( commentIterableMock );
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-dependabot-upgrades-build-dependencies.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					verify( jiraCheckRunUpdateBuilderMock ).withConclusion( GHCheckRun.Conclusion.SUCCESS );
+
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( jiraCheckRunUpdateBuilderMock ).add( outputCaptor.capture() );
+					var output = outputCaptor.getValue();
+					assertThat( output )
+							.extracting( "title", InstanceOfAssertFactories.STRING )
+							.contains( "All rules passed" );
+					assertThat( output )
+							.extracting( "summary", InstanceOfAssertFactories.STRING )
+							.isBlank();
+
+					var pullRequest = mocks.pullRequest( 585627026L );
+					// no new comments are added
+					verify( pullRequest, times( 0 ) ).comment( any() );
+					// we were accessing user to see if it is dependabot or not
+					verify( pullRequest ).getUser();
+					var user = mocks.ghObject( GHUser.class, 49699333L );
+					verify( user ).getLogin();
+					verifyNoMoreInteractions( mocks.ghObjects() );
+				} );
+	}
+
+	@Test
+	void someoneOtherThanDependabotPretendingToOpenBuildDependencyUpgradePullRequest() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									jira:
+									  projectKey: "HSEARCH"
+									  ignore:
+									    - user: dependabot[bot]
+									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
+									""" );
+
+					var repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( 344815557L );
+
+					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+							.commit( "Bump maven-clean-plugin from 3.2.0 to 3.3.1" );
+
+					// mock no comments so when bot checks if it needs to modify any previous comments - it won't fail
+					var pullRequestMock = mocks.pullRequest( 585627026L );
+					PagedIterable<GHIssueComment> commentIterableMock = mockPagedIterable( Collections.emptyList() );
+					when( pullRequestMock.listComments() ).thenReturn( commentIterableMock );
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-non-dependabot-upgrades-build-dependencies.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					verify( jiraCheckRunUpdateBuilderMock ).withConclusion( GHCheckRun.Conclusion.FAILURE );
+
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( jiraCheckRunUpdateBuilderMock ).add( outputCaptor.capture() );
+					var output = outputCaptor.getValue();
+					assertThat( output )
+							.extracting( "title", InstanceOfAssertFactories.STRING )
+							.contains( "All commit messages should start with a JIRA issue key matching pattern `HSEARCH-\\d+`" );
+					assertThat( output )
+							.extracting( "summary", InstanceOfAssertFactories.STRING )
+							.contains( """
+									❌ All commit messages should start with a JIRA issue key matching pattern `HSEARCH-\\d+`
+									    ↳ Offending commits: [null]
+									✔ The PR title or body should list the keys of all JIRA issues mentioned in the commits""" );
+
+					var pullRequest = mocks.pullRequest( 585627026L );
+
+					var commentCaptor = ArgumentCaptor.forClass( String.class );
+					verify( pullRequest ).comment( commentCaptor.capture() );
+					assertThat( commentCaptor.getValue() )
+							.isEqualTo( """
+									Thanks for your pull request!
+									
+									This pull request does not follow the contribution rules. Could you have a look?
+									
+									❌ All commit messages should start with a JIRA issue key matching pattern `HSEARCH-\\d+`
+									    ↳ Offending commits: [null]
+									
+									› This message was automatically generated.""" );
+
+					// we were accessing user to see if it is dependabot or not
+					verify( pullRequest ).getUser();
+					var user = mocks.ghObject( GHUser.class, 412878L );
+					verify( user ).getLogin();
+					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );
 	}
 

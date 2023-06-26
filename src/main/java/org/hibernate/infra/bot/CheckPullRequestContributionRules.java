@@ -28,6 +28,7 @@ import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestCommitDetail;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHUser;
 
 public class CheckPullRequestContributionRules {
 
@@ -138,7 +139,10 @@ public class CheckPullRequestContributionRules {
 			final boolean checkMentions = repositoryConfig.jira.getInsertLinksInPullRequests().isEmpty()
 					|| repositoryConfig.jira.getInsertLinksInPullRequests().get().equals( Boolean.FALSE );
 			repositoryConfig.jira.getIssueKeyPattern()
-					.ifPresent( issueKeyPattern -> checks.add( new JiraIssuesCheck( issueKeyPattern, checkMentions ) ) );
+					.ifPresent( issueKeyPattern -> checks.add(
+							new JiraIssuesCheck(
+									issueKeyPattern, checkMentions, repositoryConfig.jira.getIgnore()
+							) ) );
 		}
 
 		return checks;
@@ -167,14 +171,23 @@ public class CheckPullRequestContributionRules {
 
 		private final boolean checkMentions;
 
-		JiraIssuesCheck(Pattern issueKeyPattern, boolean checkMentions) {
+		private final List<RepositoryConfig.IgnoreConfiguration> ignoreConfigurations;
+
+		JiraIssuesCheck(Pattern issueKeyPattern, boolean checkMentions, List<RepositoryConfig.IgnoreConfiguration> ignoreConfigurations) {
 			super( "Contribution — JIRA issues" );
 			this.issueKeyPattern = issueKeyPattern;
 			this.checkMentions = checkMentions;
+			this.ignoreConfigurations = ignoreConfigurations;
 		}
 
 		@Override
 		public void perform(CheckRunContext context, CheckRunOutput output) throws IOException {
+			if ( !shouldCheckPullRequest( context ) ) {
+				// Means we have an ignore rule configured that matches our pull request.
+				// No need to check anything else.
+				return;
+			}
+
 			String title = context.pullRequest.getTitle();
 			String body = context.pullRequest.getBody();
 
@@ -215,6 +228,19 @@ public class CheckPullRequestContributionRules {
 					pullRequestRule.failed("Issue keys mentioned in commits but missing from the PR title or body: " + issueKeysNotMentionedInPullRequest);
 				}
 			}
+		}
+
+		private boolean shouldCheckPullRequest(CheckRunContext context) throws IOException {
+			GHUser author = context.pullRequest.getUser();
+			String title = context.pullRequest.getTitle();
+			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoreConfigurations ) {
+				if ( ignore.getUser().equals( author.getLogin() )
+						&& ignore.getTitlePattern().matcher( title ).matches() ) {
+					return false;
+				}
+			}
+
+			return true;
 		}
 	}
 
