@@ -36,7 +36,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus-github-app.version>2.0.4</quarkus-github-app.version>
     <!-- Using a single property for both plugin and platform, so that GitHub's Dependabot doesn't get confused -->
-    <quarkus.version>3.2.2.Final</quarkus.version>
+    <quarkus.version>3.2.3.Final</quarkus.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <surefire-plugin.version>3.1.2</surefire-plugin.version>
