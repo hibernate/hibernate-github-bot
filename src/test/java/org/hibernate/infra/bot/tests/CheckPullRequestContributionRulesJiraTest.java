@@ -13,6 +13,7 @@ import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -397,4 +398,100 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 				} );
 	}
 
+	@Test
+	void ignoreFiles_commitMessageNotStartingWithIssueKey_allFilesIgnored() throws IOException {
+		long repoId = 344815557L;
+		long prId = 1580647794L;
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									jira:
+									  projectKey: "HSEARCH"
+									  ignoreFiles:
+									    - ".github"
+									    - "ci"
+									    - "build/config"
+									    - "Jenkinsfile"
+									    - "*/Jenkinsfile"
+									    - "*.Jenkinsfile"
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.commit( "Change Jenkinsfiles", "98822fa0c6d633704216dae11591e7204251e85d",
+									List.of( "Jenkinsfile", "bar/foo.Jenkinsfile", "foo/Jenkinsfile" ) )
+							.commit( "Change some build config", "1991366c665fec3d9f2e9dc03a052d9ac604d587",
+									List.of( ".github/foo.yml", "build/config/pom.xml", "ci/somefile.xml" ) )
+							.noComments();
+
+					mockCheckRuns( repoMock, "1991366c665fec3d9f2e9dc03a052d9ac604d587" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-jira-all-files-ignored.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					verify( jiraCheckRunUpdateBuilderMock ).withConclusion( GHCheckRun.Conclusion.SUCCESS );
+
+					var pullRequest = mocks.pullRequest( prId );
+					// no new comments are added
+					verify( pullRequest, times( 0 ) ).comment( any() );
+				} );
+	}
+
+	@Test
+	void ignoreFiles_commitMessageNotStartingWithIssueKey_someFilesIgnored() throws IOException {
+		long repoId = 344815557L;
+		long prId = 1580647565L;
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									jira:
+									  projectKey: "HSEARCH"
+									  ignoreFiles:
+									    - ".github"
+									    - "ci"
+									    - "build/config"
+									    - "Jenkinsfile"
+									    - "*/Jenkinsfile"
+									    - "*.Jenkinsfile"
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.commit( "Change Jenkinsfiles", "391faa2d04116673fdc86dfddef5782622bfc233",
+									List.of( "Jenkinsfile", "bar/foo.Jenkinsfile", "foo/Jenkinsfile" ) )
+							.commit( "Change some build config and POM", "22e9e04d6df246e00268df84fb3d783f37c96312",
+									List.of( ".github/foo.yml", "build/config/pom.xml", "ci/somefile.xml", "pom.xml" ) )
+							.noComments();
+
+					mockCheckRuns( repoMock, "22e9e04d6df246e00268df84fb3d783f37c96312" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-jira-some-files-ignored.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					GHPullRequest prMock = mocks.pullRequest( prId );
+					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
+					verify( prMock ).comment( messageCaptor.capture() );
+					assertThat( messageCaptor.getValue() )
+							.isEqualTo( """
+									Thanks for your pull request!
+
+									This pull request does not follow the contribution rules. Could you have a look?
+
+									❌ All commit messages should start with a JIRA issue key matching pattern `HSEARCH-\\d+`
+									    ↳ Offending commits: [22e9e04d6df246e00268df84fb3d783f37c96312]
+
+									› This message was automatically generated.""" );
+					verifyNoMoreInteractions( mocks.ghObjects() );
+				} );
+	}
 }

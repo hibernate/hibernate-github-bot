@@ -18,6 +18,8 @@ public class RepositoryConfig {
 
 		private List<IgnoreConfiguration> ignore = Collections.emptyList();
 
+		private List<String> ignoreFiles = Collections.emptyList();
+
 		public void setProjectKey(String key) {
 			issueKeyPattern = Optional.of( Patterns.compile( key + "-\\d+" ) );
 		}
@@ -40,6 +42,14 @@ public class RepositoryConfig {
 
 		public void setIgnore(List<IgnoreConfiguration> ignore) {
 			this.ignore = ignore;
+		}
+
+		public List<String> getIgnoreFiles() {
+			return ignoreFiles;
+		}
+
+		public void setIgnoreFiles(List<String> ignoreFiles) {
+			this.ignoreFiles = ignoreFiles;
 		}
 	}
 

@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+
 import jakarta.inject.Inject;
 
 import org.hibernate.infra.bot.check.Check;
@@ -15,6 +16,7 @@ import org.hibernate.infra.bot.check.CheckRunRule;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.util.CommitMessages;
+import org.hibernate.infra.bot.util.GlobMatcher;
 
 import org.jboss.logging.Logger;
 
@@ -52,7 +54,7 @@ public class CheckPullRequestContributionRules {
 
 	void pullRequestChanged(
 			@PullRequest.Opened @PullRequest.Reopened @PullRequest.Edited @PullRequest.Synchronize
-					GHEventPayload.PullRequest payload,
+			GHEventPayload.PullRequest payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
 		checkPullRequestContributionRules( payload.getRepository(), repositoryConfig,
 				payload.getPullRequest()
@@ -141,7 +143,8 @@ public class CheckPullRequestContributionRules {
 			repositoryConfig.jira.getIssueKeyPattern()
 					.ifPresent( issueKeyPattern -> checks.add(
 							new JiraIssuesCheck(
-									issueKeyPattern, checkMentions, repositoryConfig.jira.getIgnore()
+									issueKeyPattern, checkMentions, repositoryConfig.jira.getIgnore(),
+									repositoryConfig.jira.getIgnoreFiles()
 							) ) );
 		}
 
@@ -171,13 +174,17 @@ public class CheckPullRequestContributionRules {
 
 		private final boolean checkMentions;
 
-		private final List<RepositoryConfig.IgnoreConfiguration> ignoreConfigurations;
+		private final List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations;
+		private final GlobMatcher ignoredFilesMatcher;
 
-		JiraIssuesCheck(Pattern issueKeyPattern, boolean checkMentions, List<RepositoryConfig.IgnoreConfiguration> ignoreConfigurations) {
+		JiraIssuesCheck(Pattern issueKeyPattern, boolean checkMentions,
+				List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations,
+				List<String> ignoreFilePatterns) {
 			super( "Contribution — JIRA issues" );
 			this.issueKeyPattern = issueKeyPattern;
 			this.checkMentions = checkMentions;
-			this.ignoreConfigurations = ignoreConfigurations;
+			this.ignoredPRConfigurations = ignoredPRConfigurations;
+			this.ignoredFilesMatcher = new GlobMatcher( ignoreFilePatterns );
 		}
 
 		@Override
@@ -195,9 +202,10 @@ public class CheckPullRequestContributionRules {
 			Set<String> commitsWithMessageNotStartingWithIssueKey = new LinkedHashSet<>();
 			for ( GHPullRequestCommitDetail commitDetails : context.pullRequest.listCommits() ) {
 				GHPullRequestCommitDetail.Commit commit = commitDetails.getCommit();
+				String sha = commitDetails.getSha();
 				List<String> commitIssueKeys = CommitMessages.extractIssueKeys( issueKeyPattern, commit.getMessage() );
-				if ( commitIssueKeys.isEmpty() ) {
-					commitsWithMessageNotStartingWithIssueKey.add( commitDetails.getSha() );
+				if ( commitIssueKeys.isEmpty() && !ignoredFilesMatcher.allFilesMatch( context.repository, sha ) ) {
+					commitsWithMessageNotStartingWithIssueKey.add( sha );
 				}
 				else {
 					issueKeys.addAll( commitIssueKeys );
@@ -217,15 +225,17 @@ public class CheckPullRequestContributionRules {
 			if ( checkMentions ) {
 				// We only need to check mentions if automatic body editing is disabled
 				CheckRunRule pullRequestRule = output.rule(
-						"The PR title or body should list the keys of all JIRA issues mentioned in the commits");
+						"The PR title or body should list the keys of all JIRA issues mentioned in the commits" );
 				List<String> issueKeysNotMentionedInPullRequest = issueKeys.stream()
-						.filter(issueKey -> (title == null || !title.contains(issueKey))
-								&& (body == null || !body.contains(issueKey)))
+						.filter( issueKey -> ( title == null || !title.contains( issueKey ) )
+								&& ( body == null || !body.contains( issueKey ) ) )
 						.toList();
-				if (issueKeysNotMentionedInPullRequest.isEmpty()) {
+				if ( issueKeysNotMentionedInPullRequest.isEmpty() ) {
 					pullRequestRule.passed();
-				} else {
-					pullRequestRule.failed("Issue keys mentioned in commits but missing from the PR title or body: " + issueKeysNotMentionedInPullRequest);
+				}
+				else {
+					pullRequestRule.failed(
+							"Issue keys mentioned in commits but missing from the PR title or body: " + issueKeysNotMentionedInPullRequest );
 				}
 			}
 		}
@@ -233,7 +243,7 @@ public class CheckPullRequestContributionRules {
 		private boolean shouldCheckPullRequest(CheckRunContext context) throws IOException {
 			GHUser author = context.pullRequest.getUser();
 			String title = context.pullRequest.getTitle();
-			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoreConfigurations ) {
+			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoredPRConfigurations ) {
 				if ( ignore.getUser().equals( author.getLogin() )
 						&& ignore.getTitlePattern().matcher( title ).matches() ) {
 					return false;

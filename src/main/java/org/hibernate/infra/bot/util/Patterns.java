@@ -8,10 +8,6 @@ public class Patterns {
 		return Pattern.compile(pattern, Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 	}
 
-	public static boolean find(String pattern, String string) {
-		return compile(pattern).matcher(string).find();
-	}
-
 	private Patterns() {
 	}
 }
