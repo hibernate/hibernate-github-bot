@@ -42,14 +42,25 @@ with the following content:
 jira:
   projectKey: "HSEARCH" # Change to whatever your project key is
   insertLinksInPullRequests: true # This is optional and enables automatically adding issue links to PR descriptions
-  # To skip JIRA-related checks (pull request title/body includes JIRA keys/links etc.),
+  # To skip JIRA-related checks (pull request title/body includes JIRA issue keys/links etc.),
   # a list of ignore rules can be configured:
   ignore:
     - user: dependabot[bot]
       titlePattern: ".*\\bmaven\\b.*\\bplugin\\b.*" # will ignore build dependency upgrades i.e. maven plugin version upgrades.
     - user: all-contributors[bot]
       titlePattern: ".*"
-    # Add even more here if you want to.
+  # To skip commits that contain only irrelevant files for JIRA-related checks (commit includes JIRA issue key),
+  # a list of ignored files rules can be configured:
+  ignoreFiles:
+     # Ignore a directory recursively
+     - ".github"
+     - "ci"
+     - "build/config"
+     # Ignore a specific file
+     - "Jenkinsfile"
+     # Ignore all paths matching a given pattern
+     - "*/Jenkinsfile"
+     - "*.Jenkinsfile"
 ```
 
 ### Altering the infrastructure

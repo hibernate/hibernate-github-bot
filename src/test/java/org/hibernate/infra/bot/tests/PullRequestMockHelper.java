@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockContext;
+import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHCommitPointer;
 import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
@@ -25,23 +26,29 @@ public class PullRequestMockHelper {
 		GHCommitPointer baseMock = stub( GHCommitPointer.class );
 		when( pullRequestMock.getBase() ).thenReturn( baseMock );
 		when( baseMock.getRepository() ).thenReturn( repoMock );
-		return new PullRequestMockHelper( pullRequestMock );
+		return new PullRequestMockHelper( repoMock, pullRequestMock );
 	}
 
+	private final GHRepository repoMock;
 	private final GHPullRequest pullRequestMock;
 
 	private List<GHIssueComment> commentsMocks;
 	private List<GHPullRequestCommitDetail> commitDetailsMocks;
 
-	private PullRequestMockHelper(GHPullRequest pullRequestMock) {
+	private PullRequestMockHelper(GHRepository repoMock, GHPullRequest pullRequestMock) {
+		this.repoMock = repoMock;
 		this.pullRequestMock = pullRequestMock;
 	}
 
-	public PullRequestMockHelper commit(String message) {
+	public PullRequestMockHelper commit(String message) throws IOException {
 		return commit( message, null );
 	}
 
-	public PullRequestMockHelper commit(String message, String sha) {
+	public PullRequestMockHelper commit(String message, String sha) throws IOException {
+		return commit( message, sha, null );
+	}
+
+	public PullRequestMockHelper commit(String message, String sha, List<String> files) throws IOException {
 		if ( commitDetailsMocks == null ) {
 			commitDetailsMocks = new ArrayList<>();
 			PagedIterable<GHPullRequestCommitDetail> commitIterableMock = mockPagedIterable( commitDetailsMocks );
@@ -54,6 +61,19 @@ public class PullRequestMockHelper {
 		when( commitMock.getMessage() ).thenReturn( message );
 		if ( sha != null ) {
 			when( commitDetailMock.getSha() ).thenReturn( sha );
+		}
+		if ( files != null ) {
+			GHCommit ghCommitMock = stub( GHCommit.class );
+			when( repoMock.getCommit( sha ) ).thenReturn( ghCommitMock );
+
+			List<GHCommit.File> ghFiles = new ArrayList<>();
+			PagedIterable<GHCommit.File> commitFilesIterableMock = mockPagedIterable( ghFiles );
+			when( ghCommitMock.listFiles() ).thenReturn( commitFilesIterableMock );
+			for ( String file : files ) {
+				GHCommit.File stub = stub( GHCommit.File.class );
+				when( stub.getFileName() ).thenReturn( file );
+				ghFiles.add( stub );
+			}
 		}
 		return this;
 	}
