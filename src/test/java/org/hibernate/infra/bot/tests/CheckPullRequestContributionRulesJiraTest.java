@@ -38,6 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CheckPullRequestContributionRulesJiraTest extends AbstractPullRequestTest {
 	@Test
 	void commitMessageNotStartingWithIssueKey() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -47,9 +49,9 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Correct message" )
 							.commit( "Incorrect message", "06b6d27ba19615d14cdcd509d9eb3334e5571bf2" )
 							.comment( "Some comment" )
@@ -62,7 +64,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026L );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -81,6 +83,8 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 
 	@Test
 	void titleOrBodyNotMentioningCommitIssueKey() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -90,9 +94,9 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Commit 1" )
 							.commit( "HSEARCH-1112 Commit 2" )
 							.comment( "Some comment" )
@@ -105,7 +109,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -124,6 +128,8 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 
 	@Test
 	void titleOrBodyNotMentioningCommitIssueKey_multipleIssuesInSingleCommit() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -133,9 +139,9 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 HSEARCH-1112 Commit 1" )
 							.comment( "Some comment" )
 							.comment( "Some other comment" );
@@ -147,7 +153,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -166,6 +172,8 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 
 	@Test
 	void titleOrBodyNotMentioningCommitIssueKey_nullBody() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -175,9 +183,9 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Commit 1" )
 							.commit( "HSEARCH-1112 Commit 2" )
 							.comment( "Some comment" )
@@ -190,7 +198,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -209,6 +217,8 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 
 	@Test
 	void titleOrBodyNotMentioningCommitIssueKey_failure() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -218,9 +228,9 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					GHPullRequest pullRequestMock = mocks.pullRequest( 585627026L );
+					GHPullRequest pullRequestMock = mocks.pullRequest( prId );
 					when( pullRequestMock.listCommits() ).thenThrow( new IllegalStateException( "Simulated failure" ) );
 					GHCommitPointer baseMock = mock( GHCommitPointer.class, withSettings().stubOnly() );
 					when( pullRequestMock.getBase() ).thenReturn( baseMock );
@@ -247,7 +257,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 							.extracting( "summary", InstanceOfAssertFactories.STRING )
 							.contains( "java.lang.IllegalStateException: Simulated failure" );
 
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -266,6 +276,8 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 
 	@Test
 	void ignore_dependabotOpensBuildDependencyUpgradePullRequest() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -278,15 +290,14 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									""" );
 
 					var repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					// we don't need to mock commits, since we won't reach them, we will return fast as soon as we
-					// determine that the PR was created by dependabot, and it is a build dependency upgrade.
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							// we don't need to mock commits, since we won't reach them, we will return fast as soon as we
+							// determine that the PR was created by dependabot, and it is a build dependency upgrade.
 
-					// mock no comments so when bot checks if it needs to modify any previous comments - it won't fail
-					var pullRequestMock = mocks.pullRequest( 585627026L );
-					PagedIterable<GHIssueComment> commentIterableMock = mockPagedIterable( Collections.emptyList() );
-					when( pullRequestMock.listComments() ).thenReturn( commentIterableMock );
+							// mock no comments so when bot checks if it needs to modify any previous comments - it won't fail
+							.noComments();
 
 					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
 				} )
@@ -307,7 +318,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 							.extracting( "summary", InstanceOfAssertFactories.STRING )
 							.isBlank();
 
-					var pullRequest = mocks.pullRequest( 585627026L );
+					var pullRequest = mocks.pullRequest( prId );
 					// no new comments are added
 					verify( pullRequest, times( 0 ) ).comment( any() );
 					// we were accessing user to see if it is dependabot or not
@@ -320,6 +331,8 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 
 	@Test
 	void ignore_someoneOtherThanDependabotPretendingToOpenBuildDependencyUpgradePullRequest() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -332,15 +345,12 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									""" );
 
 					var repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
-							.commit( "Bump maven-clean-plugin from 3.2.0 to 3.3.1" );
-
-					// mock no comments so when bot checks if it needs to modify any previous comments - it won't fail
-					var pullRequestMock = mocks.pullRequest( 585627026L );
-					PagedIterable<GHIssueComment> commentIterableMock = mockPagedIterable( Collections.emptyList() );
-					when( pullRequestMock.listComments() ).thenReturn( commentIterableMock );
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.commit( "Bump maven-clean-plugin from 3.2.0 to 3.3.1" )
+							// mock no comments so when bot checks if it needs to modify any previous comments - it won't fail
+							.noComments();
 
 					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
 				} )
@@ -364,7 +374,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									    ↳ Offending commits: [null]
 									✔ The PR title or body should list the keys of all JIRA issues mentioned in the commits""" );
 
-					var pullRequest = mocks.pullRequest( 585627026L );
+					var pullRequest = mocks.pullRequest( prId );
 
 					var commentCaptor = ArgumentCaptor.forClass( String.class );
 					verify( pullRequest ).comment( commentCaptor.capture() );

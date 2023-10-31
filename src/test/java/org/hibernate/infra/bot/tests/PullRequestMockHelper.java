@@ -59,15 +59,24 @@ public class PullRequestMockHelper {
 	}
 
 	public PullRequestMockHelper comment(String body) throws IOException {
+		initCommentsMocks();
+		GHIssueComment commentMock = stub( GHIssueComment.class );
+		when( commentMock.getBody() ).thenReturn( body );
+		commentsMocks.add( commentMock );
+		return this;
+	}
+
+	public PullRequestMockHelper noComments() throws IOException {
+		initCommentsMocks();
+		return this;
+	}
+
+	private void initCommentsMocks() throws IOException {
 		if ( commentsMocks == null ) {
 			commentsMocks = new ArrayList<>();
 			PagedIterable<GHIssueComment> commitIterableMock = mockPagedIterable( commentsMocks );
 			when( pullRequestMock.listComments() ).thenReturn( commitIterableMock );
 		}
-		GHIssueComment commentMock = stub( GHIssueComment.class );
-		when( commentMock.getBody() ).thenReturn( body );
-		commentsMocks.add( commentMock );
-		return this;
 	}
 
 	@SuppressWarnings("unchecked")

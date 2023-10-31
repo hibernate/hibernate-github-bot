@@ -38,6 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class CheckPullRequestContributionRulesTitleTest extends AbstractPullRequestTest {
 	@Test
 	void title_endsWithEllipsis() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -47,9 +49,9 @@ public class CheckPullRequestContributionRulesTitleTest extends AbstractPullRequ
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Correct message" )
 							.comment( "Some comment" )
 							.comment( "Some other comment" );
@@ -61,7 +63,7 @@ public class CheckPullRequestContributionRulesTitleTest extends AbstractPullRequ
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026L );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).comment( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )

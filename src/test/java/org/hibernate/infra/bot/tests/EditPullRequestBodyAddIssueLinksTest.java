@@ -39,6 +39,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTest {
 	@Test
 	void simple() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -49,9 +51,9 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Commit 1" )
 							.commit( "HSEARCH-1112 Commit 2" )
 							.comment( "Some comment" )
@@ -64,7 +66,7 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).setBody( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -81,6 +83,8 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 
 	@Test
 	void multipleIssuesInSingleCommit() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -91,9 +95,9 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 HSEARCH-1112 Commit 1" )
 							.comment( "Some comment" )
 							.comment( "Some other comment" );
@@ -105,7 +109,7 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).setBody( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -122,6 +126,8 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 
 	@Test
 	void nullBody() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -132,9 +138,9 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Commit 1" )
 							.commit( "HSEARCH-1112 Commit 2" )
 							.comment( "Some comment" )
@@ -147,7 +153,7 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).setBody( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -162,6 +168,8 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 
 	@Test
 	void alreadyEditedBody() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -172,9 +180,9 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Commit 1" )
 							.commit( "HSEARCH-1112 Commit 2" )
 							.comment( "Some comment" )
@@ -187,7 +195,7 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
 					verify( prMock ).setBody( messageCaptor.capture() );
 					assertThat( messageCaptor.getValue() )
@@ -206,6 +214,8 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 
 	@Test
 	void bodyContainsAllIssues() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
 		given()
 				.github( mocks -> {
 					mocks.configFile("hibernate-github-bot.yml")
@@ -215,9 +225,9 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 									""" );
 
 					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
-					when( repoMock.getId() ).thenReturn( 344815557L );
+					when( repoMock.getId() ).thenReturn( repoId );
 
-					PullRequestMockHelper.start( mocks, 585627026L, repoMock )
+					PullRequestMockHelper.start( mocks, prId, repoMock )
 							.commit( "HSEARCH-1111 Commit 1" )
 							.commit( "HSEARCH-1112 Commit 2" )
 							.comment( "Some comment" )
@@ -230,7 +240,7 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {
-					GHPullRequest prMock = mocks.pullRequest( 585627026 );
+					GHPullRequest prMock = mocks.pullRequest( prId );
 					// setBody should never be invoked since the PR's body already contains both issue keys
 					verify( prMock, times( 0 ) ).setBody( null );
 				} );
