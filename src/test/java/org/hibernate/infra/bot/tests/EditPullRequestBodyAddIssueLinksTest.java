@@ -1,37 +1,23 @@
 package org.hibernate.infra.bot.tests;
 
-import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.infra.bot.tests.PullRequestMockHelper.mockPagedIterable;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
 import java.io.IOException;
-import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
 import io.quarkus.test.junit.QuarkusTest;
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.kohsuke.github.GHCheckRun;
-import org.kohsuke.github.GHCheckRunBuilder;
-import org.kohsuke.github.GHCommitPointer;
 import org.kohsuke.github.GHEvent;
-import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GHUser;
-import org.kohsuke.github.PagedIterable;
-import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @QuarkusTest
 @GitHubAppTest

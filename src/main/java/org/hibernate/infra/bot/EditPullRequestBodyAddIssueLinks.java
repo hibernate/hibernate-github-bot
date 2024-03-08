@@ -1,9 +1,11 @@
 package org.hibernate.infra.bot;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 import org.hibernate.infra.bot.config.DeploymentConfig;
@@ -13,8 +15,6 @@ import org.hibernate.infra.bot.util.CommitMessages;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.githubapp.ConfigFile;
-import io.quarkiverse.githubapp.event.CheckRun;
-import io.quarkiverse.githubapp.event.CheckSuite;
 import io.quarkiverse.githubapp.event.PullRequest;
 import jakarta.inject.Inject;
 import org.kohsuke.github.GHEventPayload;
@@ -80,36 +80,20 @@ public class EditPullRequestBodyAddIssueLinks {
 			return;
 		}
 
-		final String originalBody = pullRequest.getBody();
-		final StringBuilder sb = new StringBuilder();
-		if ( originalBody != null ) {
-			// Check if the body already contains the link section
-			final int startIndex = originalBody.indexOf( START_MARKER );
-			final int endIndex = startIndex > -1 ? originalBody.indexOf( END_MARKER ) : -1;
-			if ( startIndex > -1 && endIndex > -1 ) {
-				// Remove the whole section, it will be re-appended at the end of the body
-				sb.append( originalBody.substring( 0, startIndex ).trim() );
-				final String following = originalBody.substring( endIndex + END_MARKER.length() ).trim();
-				if ( following.length() > 0 ) {
-					sb.append( "\n\n" );
-					sb.append( following );
-				}
-			}
-			else {
-				sb.append( originalBody.trim() );
-			}
-		}
+		final String originalBody = Objects.toString( pullRequest.getBody(), "" );
 
-		final String body = sb.toString();
+		// Check if the body already contains the link section
+		final int startIndex = originalBody.indexOf( START_MARKER );
+		final int endIndex = startIndex > -1 ? originalBody.indexOf( END_MARKER ) : -1;
+		final String body = removeLinksSection( originalBody, startIndex, endIndex );
+
 		final String linksSection = constructLinksSection( issueKeys, body );
 		if ( linksSection == null ) {
 			// All issue links were already found in the request body, nothing to do
 			return;
 		}
 
-		final String newBody = body.length() == 0
-				? linksSection
-				: body + "\n\n" + linksSection;
+		final String newBody = body.isEmpty() ? linksSection : body + "\n\n" + linksSection;
 		if ( !deploymentConfig.isDryRun() ) {
 			pullRequest.setBody( newBody );
 		}
@@ -118,22 +102,44 @@ public class EditPullRequestBodyAddIssueLinks {
 		}
 	}
 
-	private String constructLinksSection(Set<String> issueKeys, String originalBody) {
-		final String lowerCaseBody = originalBody.toLowerCase( Locale.ROOT );
-		final StringBuilder sb = new StringBuilder();
+	private String constructLinksSection(Set<String> issueKeys, String body) {
+		final String lowerCaseBody = body.toLowerCase( Locale.ROOT );
+		final List<String> keys = new ArrayList<>( issueKeys.size() );
 		for ( String key : issueKeys ) {
+			// Add links for issue keys that are not already found in the original PR body
 			if ( !lowerCaseBody.contains( key.toLowerCase( Locale.ROOT ) ) ) {
-				// Only add links for issue keys that are not already found
-				// in the original PR body
-				sb.append( String.format( LINK_TEMPLATE, key ) ).append( '\n' );
+				keys.add( key );
 			}
 		}
 
-		if ( sb.isEmpty() ) {
+		if ( keys.isEmpty() ) {
 			return null;
 		}
 
+		// Try to pre-size the StringBuilder with the correct capacity
+		final int linkSize = LINK_TEMPLATE.length() + keys.get( 0 ).length() + 1;
+		final StringBuilder sb = new StringBuilder( linkSize * keys.size() );
+		for ( final String key : keys ) {
+			sb.append( String.format( LINK_TEMPLATE, key ) ).append( '\n' );
+		}
 		return START_MARKER + "\n" + EDITOR_WARNING + sb + END_MARKER;
+	}
+
+	private static String removeLinksSection(String originalBody, int startIndex, int endIndex) {
+		if ( startIndex > -1 && endIndex > -1 ) {
+			final StringBuilder sb = new StringBuilder();
+			// Remove the whole section, it will be re-appended at the end of the body
+			sb.append( originalBody.substring( 0, startIndex ).trim() );
+			final String following = originalBody.substring( endIndex + END_MARKER.length() ).trim();
+			if ( !following.isEmpty() ) {
+				sb.append( "\n\n" );
+				sb.append( following );
+			}
+			return sb.toString();
+		}
+		else {
+			return originalBody.trim();
+		}
 	}
 
 	private boolean shouldCheck(GHRepository repository, GHPullRequest pullRequest) {
