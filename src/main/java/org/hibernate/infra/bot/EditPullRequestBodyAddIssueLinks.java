@@ -79,6 +79,10 @@ public class EditPullRequestBodyAddIssueLinks {
 			LOG.debug( "Found no issue keys in commits, terminating." );
 			return;
 		}
+		else if ( issueKeys.size() > repositoryConfig.jira.getIssueLinksLimit() ) {
+			LOG.debug( "Found more issues than the configured limit, terminating." );
+			return;
+		}
 
 		final String originalBody = Objects.toString( pullRequest.getBody(), "" );
 
