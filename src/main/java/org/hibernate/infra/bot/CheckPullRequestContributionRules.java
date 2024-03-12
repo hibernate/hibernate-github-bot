@@ -138,12 +138,14 @@ public class CheckPullRequestContributionRules {
 		checks.add( new TitleCheck() );
 
 		if ( repositoryConfig != null && repositoryConfig.jira != null ) {
-			final boolean checkMentions = repositoryConfig.jira.getInsertLinksInPullRequests().isEmpty()
-					|| repositoryConfig.jira.getInsertLinksInPullRequests().get().equals( Boolean.FALSE );
+			final Integer issueLinksLimit = repositoryConfig.jira.getInsertLinksInPullRequests().isPresent()
+					&& repositoryConfig.jira.getInsertLinksInPullRequests().get().equals( Boolean.TRUE )
+					? repositoryConfig.jira.getIssueLinksLimit()
+					: null;
 			repositoryConfig.jira.getIssueKeyPattern()
 					.ifPresent( issueKeyPattern -> checks.add(
 							new JiraIssuesCheck(
-									issueKeyPattern, checkMentions, repositoryConfig.jira.getIgnore(),
+									issueKeyPattern, issueLinksLimit, repositoryConfig.jira.getIgnore(),
 									repositoryConfig.jira.getIgnoreFiles()
 							) ) );
 		}
@@ -172,17 +174,17 @@ public class CheckPullRequestContributionRules {
 
 		private final Pattern issueKeyPattern;
 
-		private final boolean checkMentions;
+		private final Integer issueLinksLimit;
 
 		private final List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations;
 		private final GlobMatcher ignoredFilesMatcher;
 
-		JiraIssuesCheck(Pattern issueKeyPattern, boolean checkMentions,
+		JiraIssuesCheck(Pattern issueKeyPattern, Integer issueLinksLimit,
 				List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations,
 				List<String> ignoreFilePatterns) {
 			super( "Contribution — JIRA issues" );
 			this.issueKeyPattern = issueKeyPattern;
-			this.checkMentions = checkMentions;
+			this.issueLinksLimit = issueLinksLimit;
 			this.ignoredPRConfigurations = ignoredPRConfigurations;
 			this.ignoredFilesMatcher = new GlobMatcher( ignoreFilePatterns );
 		}
@@ -222,7 +224,7 @@ public class CheckPullRequestContributionRules {
 				commitRule.failed( "Offending commits: " + commitsWithMessageNotStartingWithIssueKey );
 			}
 
-			if ( checkMentions ) {
+			if ( issueLinksLimit == null || issueKeys.size() > issueLinksLimit ) {
 				// We only need to check mentions if automatic body editing is disabled
 				CheckRunRule pullRequestRule = output.rule(
 						"The PR title or body should list the keys of all JIRA issues mentioned in the commits" );

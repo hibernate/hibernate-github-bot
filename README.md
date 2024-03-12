@@ -41,7 +41,8 @@ with the following content:
 ---
 jira:
   projectKey: "HSEARCH" # Change to whatever your project key is
-  insertLinksInPullRequests: true # This is optional and enables automatically adding issue links to PR descriptions
+  insertLinksInPullRequests: true # This is optional and enables automatically adding links to Jira issues found in a PR's commits to its description
+  linkIssuesLimit: 3 # This is optional and allows disabling automatic issue links when more than the specified number of keys are found in a PR's commits (defaults to 3)
   # To skip JIRA-related checks (pull request title/body includes JIRA issue keys/links etc.),
   # a list of ignore rules can be configured:
   ignore:
