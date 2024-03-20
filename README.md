@@ -11,6 +11,8 @@ Specifically, most of the GitHub-related features in this bot are powered by
 
 ## Features
 
+### Pull request checking
+
 This bot checks various contribution rules on pull requests submitted to Hibernate projects on GitHub,
 and notifies the pull request authors of any change they need to work on.
 
@@ -21,8 +23,15 @@ This includes:
 * Proper formatting of commits: every commit message must start with the key of a JIRA ticket.
 * Etc.
 
-The bot can also be configured to automatically add links to JIRA issues in PR descriptions. When this is enabled
+### Jira link insertion
+
+Optionally, the bot can be configured to automatically add links to JIRA issues in PR descriptions. When this is enabled
 links to JIRA tickets will be appended at the bottom of the PR body.
+
+### Develocity build scan extraction
+
+Optionally, the bot can be configured to automatically create a GitHub check listing Develocity build scans
+for every commit that has completed checks related to CI (GitHub Actions or Jenkins).
 
 ## Configuration
 
@@ -33,7 +42,7 @@ You will need admin rights in the Hibernate organization.
 Go to [the installed application settings](https://github.com/organizations/hibernate/settings/installations/15390286)
 and add your repository under "Repository access".
 
-If you wish to enable the JIRA-related features as well,
+If you wish to enable the JIRA-related or Develocity-related features as well,
 create the file `.github/hibernate-github-bot.yml` in default branch of your repository,
 with the following content:
 
@@ -62,6 +71,11 @@ jira:
      # Ignore all paths matching a given pattern
      - "*/Jenkinsfile"
      - "*.Jenkinsfile"
+develocity:
+  buildScan:
+    # To have the bot create a GitHub check listing Develocity build scans
+    # for every commit that has completed checks related to CI (GitHub Actions or Jenkins)
+    addCheck: true
 ```
 
 ### Altering the infrastructure

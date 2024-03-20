@@ -11,6 +11,8 @@ public class RepositoryConfig {
 
 	public JiraConfig jira;
 
+	public DevelocityConfig develocity;
+
 	public static class JiraConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
 
@@ -83,4 +85,15 @@ public class RepositoryConfig {
 			this.titlePattern = Pattern.compile( titlePattern );
 		}
 	}
+
+	public static class DevelocityConfig {
+		public DevelocityBuildScanConfig buildScan;
+	}
+
+	public static class DevelocityBuildScanConfig {
+
+		public boolean addCheck = false;
+
+	}
+
 }
