@@ -35,6 +35,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus-github-app.version>2.3.3</quarkus-github-app.version>
+    <quarkus-openapi-generator.version>2.4.1</quarkus-openapi-generator.version>
     <!-- Using a single property for both plugin and platform, so that GitHub's Dependabot doesn't get confused -->
     <quarkus.version>3.8.3</quarkus.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -92,6 +93,15 @@
       <artifactId>quarkus-cache</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkiverse.openapi.generator</groupId>
+      <artifactId>quarkus-openapi-generator</artifactId>
+      <version>${quarkus-openapi-generator.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.hrakaroo</groupId>
       <artifactId>glob</artifactId>
       <version>${glob.version}</version>
@@ -115,8 +125,6 @@
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus.version}</version>
         <extensions>true</extensions>
-        <configuration>
-        </configuration>
         <executions>
           <execution>
             <goals>
