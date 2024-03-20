@@ -1,13 +1,13 @@
-package org.hibernate.infra.bot.check;
+package org.hibernate.infra.bot.prcheck;
 
-public final class CheckRunRule {
+public final class PullRequestCheckRunRule {
 
 	final String description;
 
 	boolean passed;
 	String commentOrNull;
 
-	public CheckRunRule(String description) {
+	public PullRequestCheckRunRule(String description) {
 		this.description = description;
 	}
 

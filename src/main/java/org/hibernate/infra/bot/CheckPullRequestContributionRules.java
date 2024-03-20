@@ -9,10 +9,10 @@ import java.util.regex.Pattern;
 
 import jakarta.inject.Inject;
 
-import org.hibernate.infra.bot.check.Check;
-import org.hibernate.infra.bot.check.CheckRunContext;
-import org.hibernate.infra.bot.check.CheckRunOutput;
-import org.hibernate.infra.bot.check.CheckRunRule;
+import org.hibernate.infra.bot.prcheck.PullRequestCheck;
+import org.hibernate.infra.bot.prcheck.PullRequestCheckRunContext;
+import org.hibernate.infra.bot.prcheck.PullRequestCheckRunOutput;
+import org.hibernate.infra.bot.prcheck.PullRequestCheckRunRule;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.util.CommitMessages;
@@ -82,14 +82,14 @@ public class CheckPullRequestContributionRules {
 			return;
 		}
 
-		CheckRunContext context = new CheckRunContext( deploymentConfig, repository, repositoryConfig, pullRequest );
-		List<Check> checks = createChecks( repositoryConfig );
-		List<CheckRunOutput> outputs = new ArrayList<>();
-		for ( Check check : checks ) {
-			outputs.add( Check.run( context, check ) );
+		PullRequestCheckRunContext context = new PullRequestCheckRunContext( deploymentConfig, repository, repositoryConfig, pullRequest );
+		List<PullRequestCheck> checks = createChecks( repositoryConfig );
+		List<PullRequestCheckRunOutput> outputs = new ArrayList<>();
+		for ( PullRequestCheck check : checks ) {
+			outputs.add( PullRequestCheck.run( context, check ) );
 		}
 
-		boolean passed = outputs.stream().allMatch( CheckRunOutput::passed );
+		boolean passed = outputs.stream().allMatch( PullRequestCheckRunOutput::passed );
 		GHIssueComment existingComment = findExistingComment( pullRequest );
 		// Avoid creating noisy comments for no reason, in particular if checks passed
 		// or if the pull request was already closed.
@@ -133,8 +133,8 @@ public class CheckPullRequestContributionRules {
 		return null;
 	}
 
-	private List<Check> createChecks(RepositoryConfig repositoryConfig) {
-		List<Check> checks = new ArrayList<>();
+	private List<PullRequestCheck> createChecks(RepositoryConfig repositoryConfig) {
+		List<PullRequestCheck> checks = new ArrayList<>();
 		checks.add( new TitleCheck() );
 
 		if ( repositoryConfig != null && repositoryConfig.jira != null ) {
@@ -153,14 +153,14 @@ public class CheckPullRequestContributionRules {
 		return checks;
 	}
 
-	static class TitleCheck extends Check {
+	static class TitleCheck extends PullRequestCheck {
 
 		TitleCheck() {
 			super( "Contribution — Title" );
 		}
 
 		@Override
-		public void perform(CheckRunContext context, CheckRunOutput output) {
+		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
 			String title = context.pullRequest.getTitle();
 
 			output.rule( "The pull request title should contain at least 2 words to describe the change properly" )
@@ -170,7 +170,7 @@ public class CheckPullRequestContributionRules {
 		}
 	}
 
-	static class JiraIssuesCheck extends Check {
+	static class JiraIssuesCheck extends PullRequestCheck {
 
 		private final Pattern issueKeyPattern;
 
@@ -190,7 +190,7 @@ public class CheckPullRequestContributionRules {
 		}
 
 		@Override
-		public void perform(CheckRunContext context, CheckRunOutput output) throws IOException {
+		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
 			if ( !shouldCheckPullRequest( context ) ) {
 				// Means we have an ignore rule configured that matches our pull request.
 				// No need to check anything else.
@@ -214,7 +214,7 @@ public class CheckPullRequestContributionRules {
 				}
 			}
 
-			CheckRunRule commitRule =
+			PullRequestCheckRunRule commitRule =
 					output.rule( "All commit messages should start with a JIRA issue key matching pattern `"
 							+ issueKeyPattern + "`" );
 			if ( commitsWithMessageNotStartingWithIssueKey.isEmpty() ) {
@@ -226,7 +226,7 @@ public class CheckPullRequestContributionRules {
 
 			if ( issueLinksLimit == null || issueKeys.size() > issueLinksLimit ) {
 				// We only need to check mentions if automatic body editing is disabled
-				CheckRunRule pullRequestRule = output.rule(
+				PullRequestCheckRunRule pullRequestRule = output.rule(
 						"The PR title or body should list the keys of all JIRA issues mentioned in the commits" );
 				List<String> issueKeysNotMentionedInPullRequest = issueKeys.stream()
 						.filter( issueKey -> ( title == null || !title.contains( issueKey ) )
@@ -242,7 +242,7 @@ public class CheckPullRequestContributionRules {
 			}
 		}
 
-		private boolean shouldCheckPullRequest(CheckRunContext context) throws IOException {
+		private boolean shouldCheckPullRequest(PullRequestCheckRunContext context) throws IOException {
 			GHUser author = context.pullRequest.getUser();
 			String title = context.pullRequest.getTitle();
 			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoredPRConfigurations ) {

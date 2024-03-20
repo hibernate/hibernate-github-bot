@@ -1,4 +1,4 @@
-package org.hibernate.infra.bot.check;
+package org.hibernate.infra.bot.prcheck;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -10,37 +10,37 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.kohsuke.github.GHCheckRun;
 import org.kohsuke.github.GHCheckRunBuilder;
 
-public final class CheckRun {
+public final class PullRequestCheckRun {
 
-	private static final Logger LOG = Logger.getLogger( CheckRun.class );
+	private static final Logger LOG = Logger.getLogger( PullRequestCheckRun.class );
 
-	static CheckRun create(CheckRunContext context, Check check) throws IOException {
+	static PullRequestCheckRun create(PullRequestCheckRunContext context, PullRequestCheck check) throws IOException {
 		if ( !context.deploymentConfig.isDryRun() ) {
 			GHCheckRun checkRun = context.repository.createCheckRun(
 					check.name, context.pullRequest.getHead().getSha() )
 					.withStartedAt( Date.from( Instant.now() ) )
 					.withStatus( GHCheckRun.Status.IN_PROGRESS )
 					.create();
-			return new CheckRun( context, check, checkRun.getId() );
+			return new PullRequestCheckRun( context, check, checkRun.getId() );
 		}
 		else {
 			LOG.info( "Pull request #" + context.pullRequest.getNumber() + " - Create check run '" + check.name + "'" );
-			return new CheckRun( context, check, 42L );
+			return new PullRequestCheckRun( context, check, 42L );
 		}
 	}
 
-	private final CheckRunContext context;
-	private final Check check;
+	private final PullRequestCheckRunContext context;
+	private final PullRequestCheck check;
 	public final long id;
 
-	CheckRun(CheckRunContext context, Check check, long id) {
+	PullRequestCheckRun(PullRequestCheckRunContext context, PullRequestCheck check, long id) {
 		this.context = context;
 		this.check = check;
 		this.id = id;
 	}
 
-	CheckRunOutput perform() throws IOException {
-		CheckRunOutput output = new CheckRunOutput( id, check.name );
+	PullRequestCheckRunOutput perform() throws IOException {
+		PullRequestCheckRunOutput output = new PullRequestCheckRunOutput( id, check.name );
 
 		try {
 			check.perform( context, output );
