@@ -1,22 +1,22 @@
-package org.hibernate.infra.bot.check;
+package org.hibernate.infra.bot.prcheck;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class CheckRunOutput {
+public final class PullRequestCheckRunOutput {
 
 	public final long id;
 	public final String name;
 
-	private final List<CheckRunRule> rules = new ArrayList<>();
+	private final List<PullRequestCheckRunRule> rules = new ArrayList<>();
 
-	CheckRunOutput(long id, String name) {
+	PullRequestCheckRunOutput(long id, String name) {
 		this.id = id;
 		this.name = name;
 	}
 
-	public CheckRunRule rule(String description) {
-		CheckRunRule rule = new CheckRunRule( description );
+	public PullRequestCheckRunRule rule(String description) {
+		PullRequestCheckRunRule rule = new PullRequestCheckRunRule( description );
 		rules.add( rule );
 		return rule;
 	}
@@ -26,7 +26,7 @@ public final class CheckRunOutput {
 	}
 
 	public String title() {
-		List<CheckRunRule> failingRules = rules.stream().filter( r -> !r.passed ).toList();
+		List<PullRequestCheckRunRule> failingRules = rules.stream().filter( r -> !r.passed ).toList();
 		if ( failingRules.isEmpty() ) {
 			return "All rules passed";
 		}
@@ -49,7 +49,7 @@ public final class CheckRunOutput {
 	}
 
 	private void appendRules(StringBuilder comment, boolean includePassed) {
-		for ( CheckRunRule rule : rules ) {
+		for ( PullRequestCheckRunRule rule : rules ) {
 			if ( rule.passed && !includePassed ) {
 				continue;
 			}
