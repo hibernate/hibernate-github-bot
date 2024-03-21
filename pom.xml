@@ -28,6 +28,8 @@
 
   <properties>
     <revision>999-SNAPSHOT</revision>
+    <maven.min.version>3.9.6</maven.min.version>
+    <maven-wrapper-plugin.version>3.2.0</maven-wrapper-plugin.version>
     <compiler-plugin.version>3.12.1</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
     <maven.compiler.source>17</maven.compiler.source>
@@ -120,6 +122,14 @@
   </dependencies>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-wrapper-plugin</artifactId>
+        <version>${maven-wrapper-plugin.version}</version>
+        <configuration>
+          <mavenVersion>${maven.min.version}</mavenVersion>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
