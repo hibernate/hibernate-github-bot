@@ -35,8 +35,7 @@ public class ExtractDevelocityBuildScans {
 	@RestClient
 	BuildsApi develocityBuildsApi;
 
-	void checkRunRerequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
-			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) {
+	void checkRunRerequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload) {
 		var repository = payload.getRepository();
 		var checkRun = payload.getCheckRun();
 		if ( !DEVELOCITY_CHECK_RUN_NAME.equals( checkRun.getName() ) ) {
@@ -216,7 +215,7 @@ public class ExtractDevelocityBuildScans {
 
 		StringBuilder summary = new StringBuilder();
 		summary.append( "\n\n| Status | Job/Workflow | Tags | Goals | Build Scan | Tests | Logs |\n" );
-		summary.append( "| --- | --- | --- | --- | --- | --- | --- |\n" );
+		summary.append( "| :-:  | --  | --  | --  | :-:  | :-:  | :-:  |\n" );
 		for ( DevelocityCIBuildScan buildScan : buildScans ) {
 			summary.append(
 					"| %s | `%s` | `%s` | `%s` | [:mag:](%s) | [%s](%s) | [:page_with_curl:](%s) |\n"
