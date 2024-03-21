@@ -1,9 +1,9 @@
 package org.hibernate.infra.bot;
 
 import java.io.IOException;
-import java.util.Comparator;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
@@ -13,6 +13,7 @@ import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.develocity.DevelocityCIBuildScan;
 
 import com.gradle.develocity.api.BuildsApi;
+import com.gradle.develocity.model.Build;
 import com.gradle.develocity.model.BuildAttributesValue;
 import com.gradle.develocity.model.BuildModelName;
 import com.gradle.develocity.model.BuildsQuery;
@@ -68,12 +69,34 @@ public class ExtractDevelocityBuildScans {
 		try {
 			long checkId = createDevelocityCheck( repository, sha );
 			Throwable failure = null;
-			List<DevelocityCIBuildScan> buildScans = null;
+			List<DevelocityCIBuildScan> buildScans = new ArrayList<>();
 			try {
-				buildScans = findCIBuildScans( sha );
+				for ( Build build : develocityBuildsApi.getBuilds( new BuildsQuery.BuildsQueryQueryParam()
+						.fromInstant( 0L )
+						.query( "tag:CI value:\"Git commit id=%s\"".formatted( sha ) )
+						.models( List.of( BuildModelName.GRADLE_MINUS_ATTRIBUTES,
+								BuildModelName.MAVEN_MINUS_ATTRIBUTES ) ) ) ) {
+					try {
+						buildScans.add( toCIBuildScan( build ) );
+					}
+					catch (RuntimeException e) {
+						if ( failure == null ) {
+							failure = e;
+						}
+						else {
+							failure.addSuppressed( e );
+						}
+					}
+				}
+				buildScans.sort( DevelocityCIBuildScan.COMPARATOR );
 			}
 			catch (RuntimeException e) {
-				failure = e;
+				if ( failure == null ) {
+					failure = e;
+				}
+				else {
+					failure.addSuppressed( e );
+				}
 			}
 			if ( failure != null ) {
 				Log.errorf( failure, "Failed to extract all build scans from commit %s" + sha );
@@ -85,80 +108,68 @@ public class ExtractDevelocityBuildScans {
 		}
 	}
 
-	private List<DevelocityCIBuildScan> findCIBuildScans(String sha) {
-		return develocityBuildsApi.getBuilds( new BuildsQuery.BuildsQueryQueryParam()
-				.fromInstant( 0L )
-				.query( "tag:CI value:\"Git commit id=%s\"".formatted( sha ) )
-				.models( List.of( BuildModelName.GRADLE_MINUS_ATTRIBUTES, BuildModelName.MAVEN_MINUS_ATTRIBUTES ) ) )
-				.stream()
-				.map( build -> {
-					List<BuildAttributesValue> customValues;
-					List<String> tags;
-					List<String> goals;
-					boolean hasFailed;
-					Boolean hasVerificationFailure;
-					var maven = build.getModels().getMavenAttributes();
-					var gradle = build.getModels().getGradleAttributes();
-					if ( maven != null && maven.getModel() != null ) {
-						var model = maven.getModel();
-						tags = model.getTags();
-						customValues = model.getValues();
-						goals = model.getRequestedGoals();
-						hasFailed = model.getHasFailed();
-						hasVerificationFailure = model.getHasVerificationFailure();
-					}
-					else if ( gradle != null && gradle.getModel() != null ) {
-						var model = gradle.getModel();
-						tags = model.getTags();
-						customValues = model.getValues();
-						goals = model.getRequestedTasks();
-						hasFailed = model.getHasFailed();
-						hasVerificationFailure = model.getHasVerificationFailure();
-					}
-					else {
-						return null;
-					}
-					String provider = "";
-					String jobOrWorkflow = "";
-					String stage = "";
-					for ( BuildAttributesValue customValue : customValues ) {
-						if ( customValue.getName().equals( "CI provider" ) ) {
-							provider = customValue.getValue();
-						}
-						else if ( customValue.getName().equals( "CI job" )
-								|| customValue.getName().equals( "CI workflow" ) ) {
-							jobOrWorkflow = customValue.getValue();
-						}
-						else if ( customValue.getName().equals( "CI stage" ) ) {
-							stage = customValue.getValue();
-						}
-					}
-					tags = tags.stream()
-							.filter( Predicate.not( Predicate.isEqual( "CI" ) ) )
-							.sorted()
-							.toList();
-					return new DevelocityCIBuildScan(
-							provider,
-							jobOrWorkflow,
-							stage,
-							build.getAvailableAt(),
-							tags,
-							goals,
-							hasFailed ? DevelocityCIBuildScan.Status.FAILURE : DevelocityCIBuildScan.Status.SUCCESS,
-							hasVerificationFailure != null && !hasVerificationFailure
-									? DevelocityCIBuildScan.Status.FAILURE
-									: DevelocityCIBuildScan.Status.SUCCESS,
-							deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() ),
-							deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/tests" ),
-							deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/console-log" )
-					);
-				} )
-				.filter( Objects::nonNull )
-				.sorted( Comparator.comparing( DevelocityCIBuildScan::provider )
-						.thenComparing( DevelocityCIBuildScan::jobOrWorkflow )
-						.thenComparing( DevelocityCIBuildScan::stage )
-						.thenComparing( DevelocityCIBuildScan::availableAt ) )
+	private DevelocityCIBuildScan toCIBuildScan(Build build) {
+		URI buildScanURI = deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() );
+		List<BuildAttributesValue> customValues;
+		List<String> tags;
+		List<String> goals;
+		boolean hasFailed;
+		Boolean hasVerificationFailure;
+		var maven = build.getModels().getMavenAttributes();
+		var gradle = build.getModels().getGradleAttributes();
+		if ( maven != null && maven.getModel() != null ) {
+			var model = maven.getModel();
+			tags = model.getTags();
+			customValues = model.getValues();
+			goals = model.getRequestedGoals();
+			hasFailed = model.getHasFailed();
+			hasVerificationFailure = model.getHasVerificationFailure();
+		}
+		else if ( gradle != null && gradle.getModel() != null ) {
+			var model = gradle.getModel();
+			tags = model.getTags();
+			customValues = model.getValues();
+			goals = model.getRequestedTasks();
+			hasFailed = model.getHasFailed();
+			hasVerificationFailure = model.getHasVerificationFailure();
+		}
+		else {
+			throw new IllegalStateException( "No Maven or Gradle model in build scan " + buildScanURI );
+		}
+		String provider = "";
+		String jobOrWorkflow = "";
+		String stage = "";
+		for ( BuildAttributesValue customValue : customValues ) {
+			if ( customValue.getName().equals( "CI provider" ) ) {
+				provider = customValue.getValue();
+			}
+			else if ( customValue.getName().equals( "CI job" )
+					|| customValue.getName().equals( "CI workflow" ) ) {
+				jobOrWorkflow = customValue.getValue();
+			}
+			else if ( customValue.getName().equals( "CI stage" ) ) {
+				stage = customValue.getValue();
+			}
+		}
+		tags = tags.stream()
+				.filter( Predicate.not( Predicate.isEqual( "CI" ) ) )
+				.sorted()
 				.toList();
+		return new DevelocityCIBuildScan(
+				provider,
+				jobOrWorkflow,
+				stage,
+				build.getAvailableAt(),
+				tags,
+				goals,
+				hasFailed ? DevelocityCIBuildScan.Status.FAILURE : DevelocityCIBuildScan.Status.SUCCESS,
+				hasVerificationFailure != null && !hasVerificationFailure
+						? DevelocityCIBuildScan.Status.FAILURE
+						: DevelocityCIBuildScan.Status.SUCCESS,
+				buildScanURI,
+				deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/tests" ),
+				deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/console-log" )
+		);
 	}
 
 	private long createDevelocityCheck(GHRepository repository, String sha) throws IOException {
