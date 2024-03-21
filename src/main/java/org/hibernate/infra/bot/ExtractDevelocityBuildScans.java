@@ -3,6 +3,7 @@ package org.hibernate.infra.bot;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
@@ -97,7 +98,8 @@ public class ExtractDevelocityBuildScans {
 					boolean hasFailed;
 					Boolean hasVerificationFailure;
 					var maven = build.getModels().getMavenAttributes();
-					if ( maven != null ) {
+					var gradle = build.getModels().getGradleAttributes();
+					if ( maven != null && maven.getModel() != null ) {
 						var model = maven.getModel();
 						tags = model.getTags();
 						customValues = model.getValues();
@@ -105,13 +107,16 @@ public class ExtractDevelocityBuildScans {
 						hasFailed = model.getHasFailed();
 						hasVerificationFailure = model.getHasVerificationFailure();
 					}
-					else {
-						var model = build.getModels().getGradleAttributes().getModel();
+					else if ( gradle != null && gradle.getModel() != null ) {
+						var model = gradle.getModel();
 						tags = model.getTags();
 						customValues = model.getValues();
 						goals = model.getRequestedTasks();
 						hasFailed = model.getHasFailed();
 						hasVerificationFailure = model.getHasVerificationFailure();
+					}
+					else {
+						return null;
 					}
 					String provider = "";
 					String jobOrWorkflow = "";
@@ -148,6 +153,7 @@ public class ExtractDevelocityBuildScans {
 							deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/console-log" )
 					);
 				} )
+				.filter( Objects::nonNull )
 				.sorted( Comparator.comparing( DevelocityCIBuildScan::provider )
 						.thenComparing( DevelocityCIBuildScan::jobOrWorkflow )
 						.thenComparing( DevelocityCIBuildScan::stage )
