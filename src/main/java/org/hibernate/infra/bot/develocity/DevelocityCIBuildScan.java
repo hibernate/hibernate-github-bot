@@ -7,7 +7,7 @@ import java.util.List;
 public record DevelocityCIBuildScan(String provider, String jobOrWorkflow, String stage,
 									Long availableAt, List<String> tags, List<String> goals,
 									Status status, Status testStatus,
-									URI buildScan, URI tests, URI logs) {
+									URI buildScanUri, URI failuresUri, URI testsUri, URI logsUri) {
 
 	public static final Comparator<? super DevelocityCIBuildScan> COMPARATOR =
 			Comparator.comparing( DevelocityCIBuildScan::provider )

@@ -167,6 +167,7 @@ public class ExtractDevelocityBuildScans {
 						? DevelocityCIBuildScan.Status.FAILURE
 						: DevelocityCIBuildScan.Status.SUCCESS,
 				buildScanURI,
+				deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/failure" ),
 				deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/tests" ),
 				deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() + "/console-log" )
 		);
@@ -235,16 +236,20 @@ public class ExtractDevelocityBuildScans {
 		summary.append( "| :-:  | --  | --  | --  | :-:  | :-:  | :-:  |\n" );
 		for ( DevelocityCIBuildScan buildScan : buildScans ) {
 			summary.append(
-					"| %s | `%s` | `%s` | `%s` | [:mag:](%s) | [%s](%s) | [:page_with_curl:](%s) |\n"
+					"| [%s](%s) | `%s` | `%s` | `%s` | [:mag:](%s) | [%s](%s) | [:page_with_curl:](%s) |\n"
 							.formatted(
 									statusToEmoji( buildScan.status() ),
+									switch ( buildScan.status() ) {
+										case SUCCESS -> buildScan.buildScanUri();
+										case FAILURE -> buildScan.failuresUri();
+									},
 									String.join( " ", buildScan.jobOrWorkflow(), buildScan.stage() ),
 									String.join( "` `", buildScan.tags() ),
 									String.join( " ", buildScan.goals() ),
-									buildScan.buildScan(),
+									buildScan.buildScanUri(),
 									statusToEmoji( buildScan.testStatus() ),
-									buildScan.tests(),
-									buildScan.logs()
+									buildScan.testsUri(),
+									buildScan.logsUri()
 							) );
 		}
 		return summary.toString();
