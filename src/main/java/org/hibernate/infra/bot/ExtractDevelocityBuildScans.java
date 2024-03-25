@@ -257,7 +257,7 @@ public class ExtractDevelocityBuildScans {
 
 	private String statusToEmoji(DevelocityCIBuildScan.Status status) {
 		return switch ( status ) {
-			case SUCCESS -> ":heavy_check_mark:";
+			case SUCCESS -> ":white_check_mark:";
 			case FAILURE -> ":x:";
 		};
 	}
