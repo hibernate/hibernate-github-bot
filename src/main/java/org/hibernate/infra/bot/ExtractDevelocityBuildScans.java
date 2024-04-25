@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.develocity.DevelocityCIBuildScan;
+import org.hibernate.infra.bot.develocity.DevelocityReportFormatter;
 
 import com.gradle.develocity.api.BuildsApi;
 import com.gradle.develocity.model.Build;
@@ -36,6 +37,9 @@ public class ExtractDevelocityBuildScans {
 
 	@RestClient
 	BuildsApi develocityBuildsApi;
+
+	@Inject
+	DevelocityReportFormatter reportFormatter;
 
 	void checkRunRerequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload) {
 		var repository = payload.getRepository();
@@ -185,7 +189,7 @@ public class ExtractDevelocityBuildScans {
 			throws IOException {
 		String formattedBuildScanList = "";
 		try {
-			formattedBuildScanList = formatBuildScanList( buildScans );
+			formattedBuildScanList = reportFormatter.summary( buildScans );
 		}
 		catch (RuntimeException e) {
 			if ( failure == null ) {
@@ -226,39 +230,4 @@ public class ExtractDevelocityBuildScans {
 				.create();
 	}
 
-	private String formatBuildScanList(List<DevelocityCIBuildScan> buildScans) {
-		if ( buildScans == null || buildScans.isEmpty() ) {
-			return "No build scan found for this CI run.";
-		}
-
-		StringBuilder summary = new StringBuilder();
-		summary.append( "\n\n| Status | Job/Workflow | Tags | Goals | Build Scan | Tests | Logs |\n" );
-		summary.append( "| :-:  | --  | --  | --  | :-:  | :-:  | :-:  |\n" );
-		for ( DevelocityCIBuildScan buildScan : buildScans ) {
-			summary.append(
-					"| [%s](%s) | `%s` | `%s` | `%s` | [:mag:](%s) | [%s](%s) | [:page_with_curl:](%s) |\n"
-							.formatted(
-									statusToEmoji( buildScan.status() ),
-									switch ( buildScan.status() ) {
-										case SUCCESS -> buildScan.buildScanUri();
-										case FAILURE -> buildScan.failuresUri();
-									},
-									String.join( " ", buildScan.jobOrWorkflow(), buildScan.stage() ),
-									String.join( "` `", buildScan.tags() ),
-									String.join( " ", buildScan.goals() ),
-									buildScan.buildScanUri(),
-									statusToEmoji( buildScan.testStatus() ),
-									buildScan.testsUri(),
-									buildScan.logsUri()
-							) );
-		}
-		return summary.toString();
-	}
-
-	private String statusToEmoji(DevelocityCIBuildScan.Status status) {
-		return switch ( status ) {
-			case SUCCESS -> ":white_check_mark:";
-			case FAILURE -> ":x:";
-		};
-	}
 }
