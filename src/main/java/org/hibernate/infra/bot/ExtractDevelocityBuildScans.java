@@ -15,6 +15,7 @@ import org.hibernate.infra.bot.develocity.DevelocityReportFormatter;
 
 import com.gradle.develocity.api.BuildsApi;
 import com.gradle.develocity.model.Build;
+import com.gradle.develocity.model.BuildAttributesLink;
 import com.gradle.develocity.model.BuildAttributesValue;
 import com.gradle.develocity.model.BuildModelName;
 import com.gradle.develocity.model.BuildsQuery;
@@ -120,6 +121,7 @@ public class ExtractDevelocityBuildScans {
 	private DevelocityCIBuildScan toCIBuildScan(Build build) {
 		URI buildScanURI = deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() );
 		List<BuildAttributesValue> customValues;
+		List<BuildAttributesLink> links;
 		List<String> tags;
 		List<String> goals;
 		boolean hasFailed;
@@ -130,6 +132,7 @@ public class ExtractDevelocityBuildScans {
 			var model = maven.getModel();
 			tags = model.getTags();
 			customValues = model.getValues();
+			links = model.getLinks();
 			goals = model.getRequestedGoals();
 			hasFailed = model.getHasFailed();
 			hasVerificationFailure = model.getHasVerificationFailure();
@@ -138,6 +141,7 @@ public class ExtractDevelocityBuildScans {
 			var model = gradle.getModel();
 			tags = model.getTags();
 			customValues = model.getValues();
+			links = model.getLinks();
 			goals = model.getRequestedTasks();
 			hasFailed = model.getHasFailed();
 			hasVerificationFailure = model.getHasVerificationFailure();
@@ -160,6 +164,14 @@ public class ExtractDevelocityBuildScans {
 				stage = customValue.getValue();
 			}
 		}
+		URI jobOrWorkflowUri = null;
+		for ( BuildAttributesLink link : links ) {
+			if ( link.getLabel().equals( "GitHub Actions build" )
+					|| link.getLabel().equals( "Jenkins build" ) ) {
+				jobOrWorkflowUri = URI.create( link.getUrl() );
+			}
+		}
+
 		tags = tags.stream()
 				.filter( Predicate.not( Predicate.isEqual( "CI" ) ) )
 				.sorted()
@@ -167,6 +179,7 @@ public class ExtractDevelocityBuildScans {
 		return new DevelocityCIBuildScan(
 				provider,
 				jobOrWorkflow,
+				jobOrWorkflowUri,
 				stage,
 				build.getAvailableAt(),
 				tags,
