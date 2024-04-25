@@ -1,5 +1,6 @@
 package org.hibernate.infra.bot.config;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +12,7 @@ public class RepositoryConfig {
 
 	public JiraConfig jira;
 
-	public DevelocityConfig develocity;
+	public Develocity develocity;
 
 	public static class JiraConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
@@ -82,18 +83,50 @@ public class RepositoryConfig {
 		}
 
 		public void setTitlePattern(String titlePattern) {
-			this.titlePattern = Pattern.compile( titlePattern );
+			this.titlePattern = Patterns.compile( titlePattern );
 		}
 	}
 
-	public static class DevelocityConfig {
-		public DevelocityBuildScanConfig buildScan;
-	}
+	public static class Develocity {
+		public BuildScan buildScan;
 
-	public static class DevelocityBuildScanConfig {
+		public static class BuildScan {
 
-		public boolean addCheck = false;
+			public boolean addCheck = false;
 
+			public List<ColumnRule> tags = new ArrayList<>();
+
+			public BuildScan() {
+			}
+
+			public BuildScan(boolean addCheck, List<ColumnRule> tags) {
+				this.addCheck = addCheck;
+				this.tags = tags;
+			}
+		}
+
+		public static class ColumnRule {
+			public String column;
+			private Pattern pattern;
+			public Optional<String> replacement = Optional.empty();
+
+			public ColumnRule() {
+			}
+
+			public ColumnRule(String column, Pattern pattern, Optional<String> replacement) {
+				this.column = column;
+				this.pattern = pattern;
+				this.replacement = replacement;
+			}
+
+			public Pattern getPattern() {
+				return pattern;
+			}
+
+			public void setPattern(String pattern) {
+				this.pattern = Patterns.compile( pattern );
+			}
+		}
 	}
 
 }
