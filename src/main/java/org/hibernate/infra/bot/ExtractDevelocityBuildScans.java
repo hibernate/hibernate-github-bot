@@ -41,22 +41,26 @@ public class ExtractDevelocityBuildScans {
 	@Inject
 	DevelocityReportFormatter reportFormatter;
 
-	void checkRunRerequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload) {
+	void checkRunRerequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) {
 		var repository = payload.getRepository();
 		var checkRun = payload.getCheckRun();
 		if ( !DEVELOCITY_CHECK_RUN_NAME.equals( checkRun.getName() ) ) {
 			return;
 		}
 		String sha = checkRun.getHeadSha();
-		extractCIBuildScans( repository, sha );
+		extractCIBuildScans( repository, repositoryConfig.develocity.buildScan, sha );
 	}
 
 	void checkRunCompleted(@CheckRun.Completed GHEventPayload.CheckRun payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) {
 		if ( repositoryConfig == null
 				|| repositoryConfig.develocity == null
-				|| repositoryConfig.develocity.buildScan == null
-				|| !repositoryConfig.develocity.buildScan.addCheck ) {
+				|| repositoryConfig.develocity.buildScan == null ) {
+			return;
+		}
+		var buildScanConfig = repositoryConfig.develocity.buildScan;
+		if ( !buildScanConfig.addCheck ) {
 			return;
 		}
 		var repository = payload.getRepository();
@@ -66,10 +70,11 @@ public class ExtractDevelocityBuildScans {
 			return;
 		}
 		String sha = checkRun.getHeadSha();
-		extractCIBuildScans( repository, sha );
+		extractCIBuildScans( repository, buildScanConfig, sha );
 	}
 
-	private void extractCIBuildScans(GHRepository repository, String sha) {
+	private void extractCIBuildScans(GHRepository repository, RepositoryConfig.Develocity.BuildScan config,
+			String sha) {
 		try {
 			long checkId = createDevelocityCheck( repository, sha );
 			Throwable failure = null;
@@ -105,7 +110,7 @@ public class ExtractDevelocityBuildScans {
 			if ( failure != null ) {
 				Log.errorf( failure, "Failed to extract all build scans from commit %s" + sha );
 			}
-			updateDevelocityCheck( repository, checkId, buildScans, failure );
+			updateDevelocityCheck( repository, config, checkId, buildScans, failure );
 		}
 		catch (IOException | RuntimeException e) {
 			Log.errorf( e, "Failed to report build scans from commit %s" + sha );
@@ -184,12 +189,12 @@ public class ExtractDevelocityBuildScans {
 				.getId();
 	}
 
-	private void updateDevelocityCheck(GHRepository repository, long checkId,
-			List<DevelocityCIBuildScan> buildScans, Throwable failure)
+	private void updateDevelocityCheck(GHRepository repository, RepositoryConfig.Develocity.BuildScan config,
+			long checkId, List<DevelocityCIBuildScan> buildScans, Throwable failure)
 			throws IOException {
 		String formattedBuildScanList = "";
 		try {
-			formattedBuildScanList = reportFormatter.summary( buildScans );
+			formattedBuildScanList = reportFormatter.summary( buildScans, config );
 		}
 		catch (RuntimeException e) {
 			if ( failure == null ) {

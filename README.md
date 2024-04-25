@@ -76,6 +76,30 @@ develocity:
     # To have the bot create a GitHub check listing Develocity build scans
     # for every commit that has completed checks related to CI (GitHub Actions or Jenkins)
     addCheck: true
+    # To group tags in a separate column and/or alter/remove some tags,
+    # a list of column rules can be configured:
+    tags:
+       - column: "OS"
+         pattern: "Linux"
+       - column: "OS" # Multiple rules can target the same column
+         pattern: "Windows.*"
+         replacement: "Windows"
+       - column: "Java"
+         pattern: "jdk-(.*)"
+         replacement: "$1"
+       - column: "Backend"
+         pattern: "elasticsearch-(.*)"
+         replacement: "es-$1" # Replacement can refer to capture groups
+       - column: "Backend"
+         pattern: "(.*-)?opensearch-(.*)"
+         replacement: "$1os-$2"
+       - column: "Backend"
+         pattern: "lucene"
+       - column: "DB"
+         pattern: "h2|postgres|postgres(ql)?|mysql|mssql|derby|tidb|cockroach(db)?|oracle.*|db2"
+         replacement: "$0"
+       - pattern: "hibernate.search|elasticsearch|opensearch|main|\\d+.\\d+|PR-\\d+"
+         replacement: "" # Just remove these tags
 ```
 
 ### Altering the infrastructure
