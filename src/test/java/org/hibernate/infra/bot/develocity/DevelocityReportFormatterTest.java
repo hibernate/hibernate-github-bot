@@ -66,7 +66,7 @@ class DevelocityReportFormatterTest {
 		);
 		assertThat( formatter.summary( buildScans, new RepositoryConfig.Develocity.BuildScan() ) )
 				.isEqualTo( """
-						| Job/Workflow | Tags | Goals | Results |
+						| Job/Workflow | Tags | Goals/Tasks | Results |
 						| -- | -- | -- | :-: |
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `hibernate-search` `jdk-17` `main`\
@@ -195,7 +195,7 @@ class DevelocityReportFormatterTest {
 				)
 		) ) )
 				.isEqualTo( """
-						| Job/Workflow | OS | Java | Backend | DB | Goals | Results |
+						| Job/Workflow | OS | Java | Backend | DB | Goals/Tasks | Results |
 						| -- | -- | -- | -- | -- | -- | :-: |
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`||\
