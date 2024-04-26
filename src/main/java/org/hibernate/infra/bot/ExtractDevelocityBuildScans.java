@@ -3,8 +3,11 @@ package org.hibernate.infra.bot;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
@@ -12,6 +15,8 @@ import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.develocity.DevelocityCIBuildScan;
 import org.hibernate.infra.bot.develocity.DevelocityReportFormatter;
+import org.hibernate.infra.bot.util.GitHubActionsRunId;
+import org.hibernate.infra.bot.util.JenkinsRunId;
 
 import com.gradle.develocity.api.BuildsApi;
 import com.gradle.develocity.model.Build;
@@ -66,24 +71,29 @@ public class ExtractDevelocityBuildScans {
 		}
 		var repository = payload.getRepository();
 		var checkRun = payload.getCheckRun();
-		if ( checkRun.getApp().getId() != deploymentConfig.jenkins().githubAppId()
-				&& !"github-actions".equals( checkRun.getApp().getSlug() ) ) {
+		if ( DEVELOCITY_CHECK_RUN_NAME.equals( checkRun.getName() ) ) {
+			// Don't react to our own checks.
 			return;
 		}
-		String sha = checkRun.getHeadSha();
+		var sha = payload.getCheckRun().getHeadSha();
 		extractCIBuildScans( repository, buildScanConfig, sha );
 	}
 
 	private void extractCIBuildScans(GHRepository repository, RepositoryConfig.Develocity.BuildScan config,
 			String sha) {
 		try {
+			var checkRuns = repository.getCheckRuns( sha ).toList();
+			if ( checkRuns.stream().noneMatch( this::isJobOrWorkflow ) ) {
+				return;
+			}
 			long checkId = createDevelocityCheck( repository, sha );
 			Throwable failure = null;
 			List<DevelocityCIBuildScan> buildScans = new ArrayList<>();
 			try {
+				String query = createBuildScansQuery( checkRuns );
 				for ( Build build : develocityBuildsApi.getBuilds( new BuildsQuery.BuildsQueryQueryParam()
 						.fromInstant( 0L )
-						.query( "tag:CI value:\"Git commit id=%s\"".formatted( sha ) )
+						.query( query )
 						.models( List.of( BuildModelName.GRADLE_MINUS_ATTRIBUTES,
 								BuildModelName.MAVEN_MINUS_ATTRIBUTES ) ) ) ) {
 					try {
@@ -116,6 +126,37 @@ public class ExtractDevelocityBuildScans {
 		catch (IOException | RuntimeException e) {
 			Log.errorf( e, "Failed to report build scans from commit %s" + sha );
 		}
+	}
+
+	private String createBuildScansQuery(List<GHCheckRun> checkRuns) throws IOException {
+		Set<String> queries = new HashSet<>();
+		for ( GHCheckRun checkRun : checkRuns ) {
+			if ( isJenkinsBuild( checkRun ) ) {
+				var runId = JenkinsRunId.parse( checkRun.getExternalId() );
+				queries.add( "value:\"CI job=%s\" and value:\"CI build number=%s\""
+						.formatted( runId.job(), runId.run() ) );
+			}
+			else if ( isGitHubActionsWorkflow( checkRun ) ) {
+				var runId = GitHubActionsRunId.parse( checkRun.getDetailsUrl() );
+				queries.add( "value:\"CI run=%s\""
+						.formatted( runId.run() ) );
+			}
+			// else: unsupported check, ignore
+		}
+		return queries.stream().collect( Collectors.joining( ") or (", "(", ")" ) );
+	}
+
+	private boolean isJobOrWorkflow(GHCheckRun checkRun) {
+		return isGitHubActionsWorkflow( checkRun ) || isJenkinsBuild( checkRun );
+	}
+
+	private boolean isGitHubActionsWorkflow(GHCheckRun checkRun) {
+		return "github-actions".equals( checkRun.getApp().getSlug() );
+	}
+
+	private boolean isJenkinsBuild(GHCheckRun checkRun) {
+		return checkRun.getApp().getId() == deploymentConfig.jenkins().githubAppId()
+				&& checkRun.getExternalId() != null && !checkRun.getExternalId().isBlank();
 	}
 
 	private DevelocityCIBuildScan toCIBuildScan(Build build) {
