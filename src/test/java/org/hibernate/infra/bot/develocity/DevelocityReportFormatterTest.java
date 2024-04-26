@@ -66,67 +66,49 @@ class DevelocityReportFormatterTest {
 		);
 		assertThat( formatter.summary( buildScans, new RepositoryConfig.Develocity.BuildScan() ) )
 				.isEqualTo( """
-						| Job/Workflow | Tags | Goals | Tests |
+						| Job/Workflow | Tags | Goals | Results |
 						| -- | -- | -- | :-: |
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `hibernate-search` `jdk-17` `main`\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `elasticsearch` `elasticsearch-8.13` `h2` `hibernate-search` `jdk-17` `lucene` `main`\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows Server 2022` `hibernate-search` `jdk-17` `main`\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows Server 2022` `h2` `hibernate-search` `jdk-17` `lucene` `main`\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 hibernate-search/PR-4125\
+						|
+						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `hibernate-search` `jdk-17` `PR-4125`\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:x:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 hibernate-search/PR-4125\
+						|
+						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `elasticsearch` `elasticsearch-8.13` `h2` `hibernate-search` `jdk-17` `lucene`\
 						|`clean verify`\
-						|:x:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
+						|[:red_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
+						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						""" );
 	}
@@ -213,67 +195,49 @@ class DevelocityReportFormatterTest {
 				)
 		) ) )
 				.isEqualTo( """
-						| Job/Workflow | OS | Java | Backend | DB | Goals | Tests |
+						| Job/Workflow | OS | Java | Backend | DB | Goals | Results |
 						| -- | -- | -- | -- | -- | -- | :-: |
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`||\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`|`es-8.13` `lucene`|`h2`\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows`|`17`||\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 GitHub Actions Build\
+						|
+						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows`|`17`|`lucene`|`h2`\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 hibernate-search/PR-4125\
+						|
+						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`||\
 						|`clean install`\
-						|:white_check_mark:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						|
-						|:x:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
-						 [:link:](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
+						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
-						 hibernate-search/PR-4125\
+						|
+						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`|`es-8.13` `lucene`|`h2`\
 						|`clean verify`\
-						|:x:\
-						 [:mag:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
+						|[:red_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
+						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 								""" );
 	}

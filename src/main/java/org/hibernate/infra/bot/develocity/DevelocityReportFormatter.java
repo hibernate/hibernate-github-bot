@@ -113,7 +113,14 @@ public class DevelocityReportFormatter {
 			};
 		}
 
-		static String emoji(DevelocityCIBuildScan.Status status) {
+		static String circleEmoji(DevelocityCIBuildScan.Status status) {
+			return switch ( status ) {
+				case SUCCESS -> ":green_circle:";
+				case FAILURE -> ":red_circle:";
+			};
+		}
+
+		static String checkEmoji(DevelocityCIBuildScan.Status status) {
 			return switch ( status ) {
 				case SUCCESS -> ":white_check_mark:";
 				case FAILURE -> ":x:";
