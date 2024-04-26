@@ -5,7 +5,7 @@ No build scan found for this CI run.
 !}{#for tagColumn in tagColumns}{!
 !}| {#if tagColumn.name}{tagColumn.name}{#else}{#if tagColumns.size == 1}Tags{#else}Other tags{/if}{/if} {!
 !}{/for}{!
-!}| Goals | Results |
+!}| Goals/Tasks | Results |
 | -- {!
 !}{#for tagColumn in tagColumns}| -- {/for}{!
 !}| -- | :-: |
