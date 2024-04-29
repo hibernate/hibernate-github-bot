@@ -226,7 +226,7 @@ public class ExtractDevelocityBuildScans {
 				tags,
 				goals,
 				hasFailed ? DevelocityCIBuildScan.Status.FAILURE : DevelocityCIBuildScan.Status.SUCCESS,
-				hasVerificationFailure != null && !hasVerificationFailure
+				hasVerificationFailure != null && hasVerificationFailure
 						? DevelocityCIBuildScan.Status.FAILURE
 						: DevelocityCIBuildScan.Status.SUCCESS,
 				buildScanURI,
