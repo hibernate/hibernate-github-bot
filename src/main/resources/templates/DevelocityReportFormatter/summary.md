@@ -16,7 +16,7 @@ No build scan found for this CI run.
 !}{/for}{!
 !}|{buildScan.goals.spaceDelimited.backQuoted}{!
 !}|[{buildScan.status.circleEmoji}]({buildScan.statusUri} "Build Scan"){!
-!} [{buildScan.testStatus.checkEmoji}]({buildScan.testsUri} "Tests"){!
+!} [{buildScan.testStatus.checkEmoji}]({buildScan.testStatusUri} "Tests"){!
 !} [:page_with_curl:]({buildScan.logsUri} "Logs"){!
 !}|
 {/for}

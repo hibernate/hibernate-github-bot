@@ -12,6 +12,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.core.UriBuilder;
 
 import org.hibernate.infra.bot.config.RepositoryConfig;
 
@@ -110,6 +111,13 @@ public class DevelocityReportFormatter {
 			return switch ( buildScan.status() ) {
 				case SUCCESS -> buildScan.buildScanUri();
 				case FAILURE -> buildScan.failuresUri();
+			};
+		}
+
+		static URI testStatusUri(DevelocityCIBuildScan buildScan) {
+			return switch ( buildScan.testStatus() ) {
+				case SUCCESS -> buildScan.testsUri();
+				case FAILURE -> UriBuilder.fromUri( buildScan.testsUri() ).queryParam( "outcome", "FAILED,FLAKY" ).build();
 			};
 		}
 

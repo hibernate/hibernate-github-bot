@@ -107,7 +107,7 @@ class DevelocityReportFormatterTest {
 						|`Linux` `elasticsearch` `elasticsearch-8.13` `h2` `hibernate-search` `jdk-17` `lucene`\
 						|`clean verify`\
 						|[:red_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
-						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
+						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests?outcome=FAILED%2CFLAKY "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						""" );
@@ -236,7 +236,7 @@ class DevelocityReportFormatterTest {
 						|`Linux`|`17`|`es-8.13` `lucene`|`h2`\
 						|`clean verify`\
 						|[:red_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
-						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
+						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests?outcome=FAILED%2CFLAKY "Tests")\
 						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 								""" );
