@@ -117,7 +117,7 @@ public class DevelocityReportFormatter {
 		static URI testStatusUri(DevelocityCIBuildScan buildScan) {
 			return switch ( buildScan.testStatus() ) {
 				case SUCCESS -> buildScan.testsUri();
-				case FAILURE -> UriBuilder.fromUri( buildScan.testsUri() ).queryParam( "outcome", "FAILED,FLAKY" ).build();
+				case FAILURE -> UriBuilder.fromUri( buildScan.testsUri() ).queryParam( "outcome", "FAILED", "FLAKY" ).build();
 			};
 		}
 
