@@ -244,7 +244,7 @@ class DevelocityReportFormatterTest {
 
 	private DevelocityCIBuildScan buildScanStub(String provider, String jobOrWorkflow, String stage, List<String> tags,
 			List<String> goals, DevelocityCIBuildScan.Status status, DevelocityCIBuildScan.Status testStatus) {
-		return new DevelocityCIBuildScan( provider, jobOrWorkflow,
+		return new DevelocityCIBuildScan( provider, "hostname does not matter (not rendered)", jobOrWorkflow,
 				URI.create( "https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/" ),
 				stage, 0L,
 				tags, goals, status, testStatus,
