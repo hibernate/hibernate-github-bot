@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.gradle.develocity.model.BuildAttributesEnvironment;
 import jakarta.inject.Inject;
 
 import org.hibernate.infra.bot.config.DeploymentConfig;
@@ -161,6 +162,7 @@ public class ExtractDevelocityBuildScans {
 
 	private DevelocityCIBuildScan toCIBuildScan(Build build) {
 		URI buildScanURI = deploymentConfig.develocity().uri().resolve( "/s/" + build.getId() );
+		BuildAttributesEnvironment environment;
 		List<BuildAttributesValue> customValues;
 		List<BuildAttributesLink> links;
 		List<String> tags;
@@ -171,6 +173,7 @@ public class ExtractDevelocityBuildScans {
 		var gradle = build.getModels().getGradleAttributes();
 		if ( maven != null && maven.getModel() != null ) {
 			var model = maven.getModel();
+			environment = model.getEnvironment();
 			tags = model.getTags();
 			customValues = model.getValues();
 			links = model.getLinks();
@@ -180,6 +183,7 @@ public class ExtractDevelocityBuildScans {
 		}
 		else if ( gradle != null && gradle.getModel() != null ) {
 			var model = gradle.getModel();
+			environment = model.getEnvironment();
 			tags = model.getTags();
 			customValues = model.getValues();
 			links = model.getLinks();
@@ -191,6 +195,7 @@ public class ExtractDevelocityBuildScans {
 			throw new IllegalStateException( "No Maven or Gradle model in build scan " + buildScanURI );
 		}
 		String provider = "";
+		String hostname = environment.getPublicHostname();
 		String jobOrWorkflow = "";
 		String stage = "";
 		for ( BuildAttributesValue customValue : customValues ) {
@@ -218,7 +223,7 @@ public class ExtractDevelocityBuildScans {
 				.sorted()
 				.toList();
 		return new DevelocityCIBuildScan(
-				provider,
+				provider, hostname,
 				jobOrWorkflow,
 				jobOrWorkflowUri,
 				stage,
