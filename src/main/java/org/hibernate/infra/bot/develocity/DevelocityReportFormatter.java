@@ -1,6 +1,9 @@
 package org.hibernate.infra.bot.develocity;
 
 import java.net.URI;
+import java.time.Clock;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -14,8 +17,10 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.UriBuilder;
 
+import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateInstance;
@@ -26,6 +31,11 @@ public class DevelocityReportFormatter {
 	public String summary(List<DevelocityCIBuildScan> buildScans, RepositoryConfig.Develocity.BuildScan config) {
 		Collection<TagColumn> tagColumns = extractTagColumns( buildScans, config );
 		return Templates.summary( buildScans, tagColumns )
+				.render();
+	}
+
+	public String footer(String query, boolean debug) {
+		return Templates.footer( query, debug )
 				.render();
 	}
 
@@ -85,6 +95,8 @@ public class DevelocityReportFormatter {
 	private static class Templates {
 		public static native TemplateInstance summary(List<DevelocityCIBuildScan> buildScans,
 				Collection<TagColumn> tagColumns);
+
+		public static native TemplateInstance footer(String query, boolean debug);
 	}
 
 	@TemplateExtension
@@ -141,6 +153,28 @@ public class DevelocityReportFormatter {
 	private static class ListTemplateExtensions {
 		static List<String> create(String... content) {
 			return List.of( content );
+		}
+	}
+
+	@TemplateExtension(namespace = "develocity")
+	@SuppressWarnings("unused")
+	private static class DevelocityTemplateExtensions {
+		static URI webSearchUri(String query) {
+			var config = Arc.container().instance( DeploymentConfig.class ).get();
+			var clock = Arc.container().instance( Clock.class ).get();
+			return UriBuilder.fromUri( config.develocity().uri() )
+					.path( "scans" )
+					.queryParam( "search.query", query )
+					// Make sure the query still works if new build scans are added
+					.queryParam( "search.startTimeMin", 1 )
+					.queryParam( "search.startTimeMax", clock.instant().plus( 365, ChronoUnit.DAYS ).toEpochMilli() )
+					.queryParam( "search.timeZoneId", "UTC" )
+					.build();
+		}
+
+		static String formatQuery(String query) {
+			return query.replace( "(", "(\n" )
+					.replace( ")", "\n)" );
 		}
 	}
 }
