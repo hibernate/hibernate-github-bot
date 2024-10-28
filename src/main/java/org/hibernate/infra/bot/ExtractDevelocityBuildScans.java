@@ -89,9 +89,10 @@ public class ExtractDevelocityBuildScans {
 			}
 			long checkId = createDevelocityCheck( repository, sha );
 			Throwable failure = null;
+			String query = "";
 			List<DevelocityCIBuildScan> buildScans = new ArrayList<>();
 			try {
-				String query = createBuildScansQuery( checkRuns );
+				query = createBuildScansQuery( checkRuns );
 				for ( Build build : develocityBuildsApi.getBuilds( new BuildsQuery.BuildsQueryQueryParam()
 						.fromInstant( 0L )
 						.query( query )
@@ -122,7 +123,7 @@ public class ExtractDevelocityBuildScans {
 			if ( failure != null ) {
 				Log.errorf( failure, "Failed to extract all build scans from commit %s" + sha );
 			}
-			updateDevelocityCheck( repository, config, checkId, buildScans, failure );
+			updateDevelocityCheck( repository, config, checkId, query, buildScans, failure );
 		}
 		catch (IOException | RuntimeException e) {
 			Log.errorf( e, "Failed to report build scans from commit %s" + sha );
@@ -249,11 +250,13 @@ public class ExtractDevelocityBuildScans {
 	}
 
 	private void updateDevelocityCheck(GHRepository repository, RepositoryConfig.Develocity.BuildScan config,
-			long checkId, List<DevelocityCIBuildScan> buildScans, Throwable failure)
+			long checkId, String query, List<DevelocityCIBuildScan> buildScans, Throwable failure)
 			throws IOException {
 		String formattedBuildScanList = "";
+		String footer = "";
 		try {
 			formattedBuildScanList = reportFormatter.summary( buildScans, config );
+			footer = reportFormatter.footer( query, false );
 		}
 		catch (RuntimeException e) {
 			if ( failure == null ) {
@@ -270,12 +273,18 @@ public class ExtractDevelocityBuildScans {
 		if ( failure == null ) {
 			conclusion = GHCheckRun.Conclusion.NEUTRAL;
 			title = "Found %s build scan%s".formatted( buildScans.size(), buildScans.size() != 1 ? "s" : "" );
-			text = formattedBuildScanList;
+			text = formattedBuildScanList + footer;
 		}
 		else {
 			conclusion = GHCheckRun.Conclusion.FAILURE;
 			title = "Develocity Build Scans extraction failed with exception";
-			text = formattedBuildScanList + "\n\n```\n" + ExceptionUtils.getStackTrace( failure ) + "\n```";
+			try {
+				footer = reportFormatter.footer( query, true );
+			}
+			catch (RuntimeException e) {
+				failure.addSuppressed( e );
+			}
+			text = formattedBuildScanList + "\n\n```\n" + ExceptionUtils.getStackTrace( failure ) + "\n```" + footer;
 		}
 
 		if ( deploymentConfig.isDryRun() ) {

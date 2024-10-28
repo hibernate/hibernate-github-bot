@@ -11,6 +11,10 @@ package org.hibernate.infra.bot.develocity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,8 +23,10 @@ import jakarta.inject.Inject;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.util.Patterns;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -28,6 +34,13 @@ class DevelocityReportFormatterTest {
 
 	@Inject
 	DevelocityReportFormatter formatter;
+
+	@BeforeEach
+	void setup() {
+		Instant now = LocalDateTime.of( 2024, 10, 28, 0, 0 ).toInstant( ZoneOffset.UTC );
+		var clockMock = Clock.fixed( now, ZoneOffset.UTC );
+		QuarkusMock.installMockForType( clockMock, Clock.class );
+	}
 
 	@Test
 	void summary_simple() {
@@ -254,4 +267,39 @@ class DevelocityReportFormatterTest {
 				URI.create( "https://ge.hibernate.org/s/45fv2rr67ofuy/console-log" ) );
 	}
 
+	@Test
+	void footer_simple() {
+		assertThat( formatter.footer(
+				"(value:\"CI job=hibernate-orm-pipeline/PR-9171\" and value:\"CI build number=1\") or (value:\"CI run=11552691889\")",
+				false ) )
+				.isEqualTo(
+						"""
+
+
+								Didn't find your build? Try [this search query](https://ge.hibernate.org/scans?search.query=%28value%3A%22CI+job%3Dhibernate-orm-pipeline%2FPR-9171%22+and+value%3A%22CI+build+number%3D1%22%29+or+%28value%3A%22CI+run%3D11552691889%22%29&search.startTimeMin=1&search.startTimeMax=1761609600000&search.timeZoneId=UTC)
+								""" );
+	}
+
+	@Test
+	void footer_debug() {
+		assertThat( formatter.footer(
+				"(value:\"CI job=hibernate-orm-pipeline/PR-9171\" and value:\"CI build number=1\") or (value:\"CI run=11552691889\")",
+				true ) )
+				.isEqualTo(
+						"""
+
+
+								Didn't find your build? Try [this search query](https://ge.hibernate.org/scans?search.query=%28value%3A%22CI+job%3Dhibernate-orm-pipeline%2FPR-9171%22+and+value%3A%22CI+build+number%3D1%22%29+or+%28value%3A%22CI+run%3D11552691889%22%29&search.startTimeMin=1&search.startTimeMax=1761609600000&search.timeZoneId=UTC)
+
+								Full query sent to Develocity:
+
+								```
+								(
+								value:"CI job=hibernate-orm-pipeline/PR-9171" and value:"CI build number=1"
+								) or (
+								value:"CI run=11552691889"
+								)
+								```
+								""" );
+	}
 }
