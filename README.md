@@ -131,15 +131,9 @@ You can run the bot locally by:
 Just push to the `main` branch.
 
 The `main` branch is automatically deployed in production through
-[this Jenkins job](https://ci.hibernate.org/job/hibernate-github-bot/),
-configured through the `Jenkinsfile` at the root of this repository.
-
-Container images are pushed to [this quay.io repository](https://quay.io/repository/hibernate/hibernate-github-bot).
+[this GitHub action](.github/workflows/deploy.yml). The app is pushed to an OpenShift cluster.
 
 ### Maintenance
 
-You can check the current health of the bot like this:
-
-```shell
-curl https://infra.hibernate.org/bot/github/q/health | jq
-```
+You can check the current health of the bot at the corresponding project in the OpenShift console.
+See the team resources for more details.
