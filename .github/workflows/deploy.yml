@@ -66,6 +66,7 @@ jobs:
           registry: ${{ steps.oc-registry.outputs.OC_REGISTRY_URL }}
           username: ignored
           password: ${{ secrets.OPENSHIFT_TOKEN_INFRA_PROD }}
+
         # Helm in particular needs semantic versions
         # See https://github.com/helm/helm/issues/9342#issuecomment-775269042
         # See the parts about pre-release versions in https://semver.org/#semantic-versioning-specification-semver
