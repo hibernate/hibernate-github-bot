@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.gradle.develocity.model.BuildAttributesEnvironment;
 import jakarta.inject.Inject;
 
 import org.hibernate.infra.bot.config.DeploymentConfig;
@@ -21,6 +20,7 @@ import org.hibernate.infra.bot.util.JenkinsRunId;
 
 import com.gradle.develocity.api.BuildsApi;
 import com.gradle.develocity.model.Build;
+import com.gradle.develocity.model.BuildAttributesEnvironment;
 import com.gradle.develocity.model.BuildAttributesLink;
 import com.gradle.develocity.model.BuildAttributesValue;
 import com.gradle.develocity.model.BuildModelName;
@@ -133,6 +133,17 @@ public class ExtractDevelocityBuildScans {
 	private String createBuildScansQuery(List<GHCheckRun> checkRuns) throws IOException {
 		Set<String> queries = new HashSet<>();
 		for ( GHCheckRun checkRun : checkRuns ) {
+			// This may not catch build scans based on merge commits created within CI runs,
+			// but will catch build scans that have no corresponding GH check run,
+			// and will allow the query link we put in reports to catch (some) *future* GH check runs.
+			var sha = checkRun.getHeadSha();
+			if ( sha != null && !sha.isBlank() ) {
+				queries.add( "tag:CI and value:\"Git commit id=%s\"".formatted( sha ) );
+			}
+
+			// This will catch build scans based on merge commits created within CI runs,
+			// but will not catch build scans that have no corresponding GH check run,
+			// and will not allow the query link we put in reports to catch *future* GH check runs.
 			if ( isJenkinsBuild( checkRun ) ) {
 				var runId = JenkinsRunId.parse( checkRun.getExternalId() );
 				queries.add( "value:\"CI job=%s\" and value:\"CI build number=%s\""
