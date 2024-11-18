@@ -39,7 +39,7 @@
     <quarkus-github-app.version>2.7.0</quarkus-github-app.version>
     <quarkus-openapi-generator.version>2.6.0</quarkus-openapi-generator.version>
     <!-- Using a single property for both plugin and platform, so that GitHub's Dependabot doesn't get confused -->
-    <quarkus.version>3.16.2</quarkus.version>
+    <quarkus.version>3.16.3</quarkus.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <glob.version>0.9.0</glob.version>
