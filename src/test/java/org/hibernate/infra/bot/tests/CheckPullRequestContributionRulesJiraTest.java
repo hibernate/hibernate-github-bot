@@ -286,7 +286,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 									jira:
 									  projectKey: "HSEARCH"
 									  ignore:
-									    - user: dependabot[bot]
+									    - userPattern: dependabot\\[bot\\]
 									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
 									""" );
 
