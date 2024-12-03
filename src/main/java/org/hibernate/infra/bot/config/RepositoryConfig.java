@@ -67,15 +67,15 @@ public class RepositoryConfig {
 
 	public static class IgnoreConfiguration {
 
-		private String user;
+		private Pattern userPattern;
 		private Pattern titlePattern;
 
-		public String getUser() {
-			return user;
+		public Pattern getUserPattern() {
+			return userPattern;
 		}
 
-		public void setUser(String user) {
-			this.user = user;
+		public void setUserPattern(String userPattern) {
+			this.userPattern = Patterns.compile( userPattern );
 		}
 
 		public Pattern getTitlePattern() {

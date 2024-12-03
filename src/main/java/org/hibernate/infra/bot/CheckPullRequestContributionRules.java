@@ -246,7 +246,7 @@ public class CheckPullRequestContributionRules {
 			GHUser author = context.pullRequest.getUser();
 			String title = context.pullRequest.getTitle();
 			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoredPRConfigurations ) {
-				if ( ignore.getUser().equals( author.getLogin() )
+				if ( ignore.getUserPattern().matcher( author.getLogin() ).matches()
 						&& ignore.getTitlePattern().matcher( title ).matches() ) {
 					return false;
 				}
