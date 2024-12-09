@@ -36,10 +36,10 @@
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <quarkus-github-app.version>2.8.0</quarkus-github-app.version>
-    <quarkus-openapi-generator.version>2.6.0</quarkus-openapi-generator.version>
+    <quarkus-github-app.version>2.8.1</quarkus-github-app.version>
+    <quarkus-openapi-generator.version>2.7.0-lts</quarkus-openapi-generator.version>
     <!-- Using a single property for both plugin and platform, so that GitHub's Dependabot doesn't get confused -->
-    <quarkus.version>3.17.2</quarkus.version>
+    <quarkus.version>3.17.3</quarkus.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <glob.version>0.9.0</glob.version>
