@@ -23,4 +23,4 @@ updates:
         update-types: ["version-update:semver-patch"]
       # We don't want to stay on an LTS version and want to have more regular updates here:
       - dependency-name: "io.quarkiverse.openapi.generator:*"
-        versions: ["2.6.0-lts"]
+        versions: ["2.6.0-lts", "2.7.0-lts", "2.8.0-lts", "2.9.0-lts"]
