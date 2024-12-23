@@ -14,6 +14,8 @@ public class RepositoryConfig {
 
 	public Develocity develocity;
 
+	public LicenseAgreement licenseAgreement;
+
 	public static class JiraConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
 
@@ -129,4 +131,24 @@ public class RepositoryConfig {
 		}
 	}
 
+	public static class LicenseAgreement {
+		private Optional<Boolean> enabled = Optional.empty();
+		private Pattern pullRequestTemplatePattern = Patterns.compile( ".+([-]{22}.+[-]{22}).++" );
+
+		public Optional<Boolean> getEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(Boolean enabled) {
+			this.enabled = Optional.of( enabled );
+		}
+
+		public Pattern getPullRequestTemplatePattern() {
+			return pullRequestTemplatePattern;
+		}
+
+		public void setPullRequestTemplatePattern(String pullRequestTemplatePattern) {
+			this.pullRequestTemplatePattern = Patterns.compile( pullRequestTemplatePattern );
+		}
+	}
 }
