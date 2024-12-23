@@ -6,21 +6,18 @@ import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import io.quarkiverse.githubapp.testing.GitHubAppTest;
-import io.quarkus.test.junit.QuarkusTest;
 import org.kohsuke.github.GHCheckRun;
 import org.kohsuke.github.GHCheckRunBuilder;
 import org.kohsuke.github.GHRepository;
 import org.mockito.Answers;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 abstract class AbstractPullRequestTest {
 	final GHCheckRunBuilder titleCheckRunCreateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder titleCheckRunUpdateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder jiraCheckRunCreateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder jiraCheckRunUpdateBuilderMock = mockCheckRunBuilder();
+	final GHCheckRunBuilder licenseCheckRunCreateBuilderMock = mockCheckRunBuilder();
+	final GHCheckRunBuilder licenseCheckRunUpdateBuilderMock = mockCheckRunBuilder();
 
 	GHCheckRunBuilder mockCheckRunBuilder() {
 		return mock( GHCheckRunBuilder.class, withSettings().defaultAnswer( Answers.RETURNS_SELF ) );
@@ -38,6 +35,12 @@ abstract class AbstractPullRequestTest {
 				jiraCheckRunCreateBuilderMock, jiraCheckRunMock, 43L
 		);
 		mockUpdateCheckRun( repoMock, 43L, jiraCheckRunUpdateBuilderMock, jiraCheckRunMock );
+
+		GHCheckRun licenseCheckRunMock = mock( GHCheckRun.class );
+		mockCreateCheckRun( repoMock, "Contribution — License agreement", headSHA,
+				licenseCheckRunCreateBuilderMock, licenseCheckRunMock, 44L
+		);
+		mockUpdateCheckRun( repoMock, 44L, licenseCheckRunUpdateBuilderMock, licenseCheckRunMock );
 	}
 
 	void mockCreateCheckRun(GHRepository repoMock, String name, String headSHA,

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jakarta.inject.Inject;
@@ -55,27 +56,29 @@ public class CheckPullRequestContributionRules {
 	void pullRequestChanged(
 			@PullRequest.Opened @PullRequest.Reopened @PullRequest.Edited @PullRequest.Synchronize
 			GHEventPayload.PullRequest payload,
-			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
-		checkPullRequestContributionRules( payload.getRepository(), repositoryConfig,
-				payload.getPullRequest()
-		);
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig,
+			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate) throws IOException {
+		checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequestTemplate, payload.getPullRequest() );
 	}
 
 	void checkRunRequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
-			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig,
+			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate) throws IOException {
 		for ( GHPullRequest pullRequest : payload.getCheckRun().getPullRequests() ) {
-			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequest );
+			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequestTemplate, pullRequest );
 		}
 	}
 
 	void checkSuiteRequested(@CheckSuite.Requested @CheckSuite.Rerequested GHEventPayload.CheckSuite payload,
-			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig,
+			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate) throws IOException {
 		for ( GHPullRequest pullRequest : payload.getCheckSuite().getPullRequests() ) {
-			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequest );
+			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequestTemplate, pullRequest );
 		}
 	}
 
 	private void checkPullRequestContributionRules(GHRepository repository, RepositoryConfig repositoryConfig,
+			String pullRequestTemplate,
 			GHPullRequest pullRequest)
 			throws IOException {
 		if ( !shouldCheck( repository, pullRequest ) ) {
@@ -83,7 +86,7 @@ public class CheckPullRequestContributionRules {
 		}
 
 		PullRequestCheckRunContext context = new PullRequestCheckRunContext( deploymentConfig, repository, repositoryConfig, pullRequest );
-		List<PullRequestCheck> checks = createChecks( repositoryConfig );
+		List<PullRequestCheck> checks = createChecks( repositoryConfig, pullRequestTemplate );
 		List<PullRequestCheckRunOutput> outputs = new ArrayList<>();
 		for ( PullRequestCheck check : checks ) {
 			outputs.add( PullRequestCheck.run( context, check ) );
@@ -133,7 +136,7 @@ public class CheckPullRequestContributionRules {
 		return null;
 	}
 
-	private List<PullRequestCheck> createChecks(RepositoryConfig repositoryConfig) {
+	private List<PullRequestCheck> createChecks(RepositoryConfig repositoryConfig, String pullRequestTemplate) {
 		List<PullRequestCheck> checks = new ArrayList<>();
 		checks.add( new TitleCheck() );
 
@@ -148,6 +151,19 @@ public class CheckPullRequestContributionRules {
 									issueKeyPattern, issueLinksLimit, repositoryConfig.jira.getIgnore(),
 									repositoryConfig.jira.getIgnoreFiles()
 							) ) );
+		}
+
+		if ( repositoryConfig != null
+				&& repositoryConfig.licenseAgreement != null
+				&& repositoryConfig.licenseAgreement.getEnabled().orElse( Boolean.FALSE ) ) {
+			Matcher matcher = repositoryConfig.licenseAgreement.getPullRequestTemplatePattern().matcher( pullRequestTemplate );
+			if ( matcher.matches()
+					&& matcher.groupCount() == 1 ) {
+				checks.add( new LicenseCheck( matcher.group( 1 ).trim() ) );
+			}
+			else {
+				throw new IllegalArgumentException( "Misconfigured license agreement check. Pattern should contain exactly 1 match group. Pattern: %s. Fetched Pull Request template: %s".formatted( repositoryConfig.licenseAgreement.getPullRequestTemplatePattern(), pullRequestTemplate ) );
+			}
 		}
 
 		return checks;
@@ -253,6 +269,28 @@ public class CheckPullRequestContributionRules {
 			}
 
 			return true;
+		}
+	}
+
+	static class LicenseCheck extends PullRequestCheck {
+
+		private final String agreementText;
+
+		protected LicenseCheck(String agreementText) {
+			super( "Contribution — License agreement" );
+			this.agreementText = agreementText;
+		}
+
+		@Override
+		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
+			String body = context.pullRequest.getBody();
+			output.rule( """
+							The pull request description must contain the following license agreement text:
+							```
+							%s
+							```
+							""".formatted( agreementText ) )
+					.result( body != null && body.contains( agreementText ) );
 		}
 	}
 
