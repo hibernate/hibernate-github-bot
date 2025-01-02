@@ -16,8 +16,6 @@ abstract class AbstractPullRequestTest {
 	final GHCheckRunBuilder titleCheckRunUpdateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder jiraCheckRunCreateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder jiraCheckRunUpdateBuilderMock = mockCheckRunBuilder();
-	final GHCheckRunBuilder licenseCheckRunCreateBuilderMock = mockCheckRunBuilder();
-	final GHCheckRunBuilder licenseCheckRunUpdateBuilderMock = mockCheckRunBuilder();
 
 	GHCheckRunBuilder mockCheckRunBuilder() {
 		return mock( GHCheckRunBuilder.class, withSettings().defaultAnswer( Answers.RETURNS_SELF ) );
@@ -36,11 +34,6 @@ abstract class AbstractPullRequestTest {
 		);
 		mockUpdateCheckRun( repoMock, 43L, jiraCheckRunUpdateBuilderMock, jiraCheckRunMock );
 
-		GHCheckRun licenseCheckRunMock = mock( GHCheckRun.class );
-		mockCreateCheckRun( repoMock, "Contribution — License agreement", headSHA,
-				licenseCheckRunCreateBuilderMock, licenseCheckRunMock, 44L
-		);
-		mockUpdateCheckRun( repoMock, 44L, licenseCheckRunUpdateBuilderMock, licenseCheckRunMock );
 	}
 
 	void mockCreateCheckRun(GHRepository repoMock, String name, String headSHA,

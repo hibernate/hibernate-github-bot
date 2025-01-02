@@ -2,6 +2,7 @@ package org.hibernate.infra.bot.tests;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
 import io.quarkus.test.junit.QuarkusTest;
+import org.kohsuke.github.GHCheckRun;
+import org.kohsuke.github.GHCheckRunBuilder;
 import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
@@ -23,6 +26,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @GitHubAppTest
 @ExtendWith(MockitoExtension.class)
 public class CheckPullRequestContributionRulesLicenseTest extends AbstractPullRequestTest {
+
+	final GHCheckRunBuilder licenseCheckRunCreateBuilderMock = mockCheckRunBuilder();
+	final GHCheckRunBuilder licenseCheckRunUpdateBuilderMock = mockCheckRunBuilder();
+
+	@Override
+	void mockCheckRuns(GHRepository repoMock, String headSHA) throws IOException {
+		super.mockCheckRuns( repoMock, headSHA );
+		GHCheckRun licenseCheckRunMock = mock( GHCheckRun.class );
+		mockCreateCheckRun( repoMock, "Contribution — License agreement", headSHA,
+				licenseCheckRunCreateBuilderMock, licenseCheckRunMock, 44L
+		);
+		mockUpdateCheckRun( repoMock, 44L, licenseCheckRunUpdateBuilderMock, licenseCheckRunMock );
+	}
+
 	@Test
 	void bodyMissingLicenseAgreement() throws IOException {
 		long repoId = 344815557L;
@@ -75,7 +92,8 @@ public class CheckPullRequestContributionRulesLicenseTest extends AbstractPullRe
 									
 									This pull request does not follow the contribution rules. Could you have a look?
 									
-									❌ The pull request description must contain the following license agreement text:
+									❌ The pull request description must contain the license agreement text.
+									    ↳ The description of this pull request must contain the following license agreement text:
 									```
 									----------------------
 									By submitting this pull request, I confirm that my contribution is made under the terms of the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.txt)

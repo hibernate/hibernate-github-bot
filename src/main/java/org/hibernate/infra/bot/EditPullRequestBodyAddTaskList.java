@@ -34,6 +34,7 @@ public class EditPullRequestBodyAddTaskList {
 	private static final String START_MARKER = "<!-- Hibernate GitHub Bot task list start -->";
 
 	private static final String END_MARKER = "<!-- Hibernate GitHub Bot task list end -->";
+	private static final Set<Character> REGEX_ESCAPE_CHARS = Set.of( '(', ')', '[', ']', '{', '}', '\\', '.', '?', '*', '+' );
 
 	@Inject
 	DeploymentConfig deploymentConfig;
@@ -113,8 +114,21 @@ public class EditPullRequestBodyAddTaskList {
 	}
 
 	private boolean tasksAreTheSame(String currentTasks, String tasks) {
-		return Patterns.compile( tasks.replace( "- [ ]", "- \\[.\\]" ).replace( "\n", "\\n" ) )
-				.matcher( currentTasks )
+		StringBuilder sb = new StringBuilder();
+		for ( char c : tasks.trim().toCharArray() ) {
+			if ( REGEX_ESCAPE_CHARS.contains( c ) ) {
+				sb.append( '\\' );
+			}
+			if ( c == '\n' ) {
+				sb.append( '\\' ).append( 'n' );
+			}
+			else {
+				sb.append( c );
+			}
+		}
+
+		return Patterns.compile( sb.toString().replace( "- \\[ \\]", "- \\[.\\]" ) )
+				.matcher( currentTasks.trim() )
 				.matches();
 	}
 
@@ -149,6 +163,17 @@ public class EditPullRequestBodyAddTaskList {
 					.append( "\n" );
 		}
 		sb.append( "\n" );
+	}
+
+	public static boolean containsUnfinishedTasks(String body) {
+		if ( body == null || body.isEmpty() ) {
+			return false;
+		}
+		String taskBody = currentTaskBody( body );
+		if ( taskBody == null ) {
+			return false;
+		}
+		return taskBody.contains( "- [ ]" );
 	}
 
 	private static String currentTaskBody(String originalBody) {
