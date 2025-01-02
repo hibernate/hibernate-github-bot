@@ -2,7 +2,9 @@ package org.hibernate.infra.bot.config;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -15,6 +17,8 @@ public class RepositoryConfig {
 	public Develocity develocity;
 
 	public LicenseAgreement licenseAgreement;
+
+	public TaskList pullRequestTasks;
 
 	public static class JiraConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
@@ -149,6 +153,32 @@ public class RepositoryConfig {
 
 		public void setPullRequestTemplatePattern(String pullRequestTemplatePattern) {
 			this.pullRequestTemplatePattern = Patterns.compile( pullRequestTemplatePattern );
+		}
+	}
+
+	public static class TaskList {
+		private static final String DEFAULT_TASKS_CATEGORY = "default";
+		private Optional<Boolean> enabled = Optional.empty();
+		private Map<String, List<String>> tasks = new HashMap<>();
+
+		public Optional<Boolean> getEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(Boolean enabled) {
+			this.enabled = Optional.of( enabled );
+		}
+
+		public Map<String, List<String>> getTasks() {
+			return tasks;
+		}
+
+		public void setTasks(Map<String, List<String>> tasks) {
+			this.tasks = tasks;
+		}
+
+		public List<String> defaultTasks() {
+			return tasks.getOrDefault( DEFAULT_TASKS_CATEGORY, List.of() );
 		}
 	}
 }

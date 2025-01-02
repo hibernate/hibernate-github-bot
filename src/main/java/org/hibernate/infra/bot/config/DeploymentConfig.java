@@ -14,6 +14,8 @@ public interface DeploymentConfig {
 
 	Jenkins jenkins();
 
+	Jira jira();
+
 	default boolean isDryRun() {
 		Optional<Boolean> dryRun = dryRun();
 		return dryRun.isPresent() && dryRun.get();
@@ -26,5 +28,11 @@ public interface DeploymentConfig {
 
 	interface Jenkins {
 		long githubAppId();
+	}
+
+	interface Jira {
+		URI uri();
+		String username();
+		String token();
 	}
 }
