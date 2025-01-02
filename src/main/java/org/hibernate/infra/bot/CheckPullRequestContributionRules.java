@@ -166,6 +166,11 @@ public class CheckPullRequestContributionRules {
 			}
 		}
 
+		if ( repositoryConfig != null && repositoryConfig.pullRequestTasks != null
+				&& repositoryConfig.pullRequestTasks.getEnabled().orElse( Boolean.FALSE ) ) {
+			checks.add( new TasksCompletedCheck() );
+		}
+
 		return checks;
 	}
 
@@ -282,15 +287,34 @@ public class CheckPullRequestContributionRules {
 		}
 
 		@Override
-		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
+		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
 			String body = context.pullRequest.getBody();
-			output.rule( """
-							The pull request description must contain the following license agreement text:
-							```
-							%s
-							```
-							""".formatted( agreementText ) )
-					.result( body != null && body.contains( agreementText ) );
+			PullRequestCheckRunRule rule = output.rule( "The pull request description must contain the license agreement text." );
+			if ( body != null && body.contains( agreementText ) ) {
+				rule.passed();
+			}
+			else {
+				rule.failed( """
+						The description of this pull request must contain the following license agreement text:
+						```
+						%s
+						```
+						""".formatted( agreementText ) );
+			}
+		}
+	}
+
+	static class TasksCompletedCheck extends PullRequestCheck {
+
+		protected TasksCompletedCheck() {
+			super( "Contribution — Review tasks" );
+		}
+
+		@Override
+		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
+			String body = context.pullRequest.getBody();
+			output.rule( "All pull request tasks should be completed." )
+					.result( !EditPullRequestBodyAddTaskList.containsUnfinishedTasks( body ) );
 		}
 	}
 
