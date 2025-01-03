@@ -33,6 +33,16 @@ links to JIRA tickets will be appended at the bottom of the PR body.
 Optionally, the bot can be configured to automatically create a GitHub check listing Develocity build scans
 for every commit that has completed checks related to CI (GitHub Actions or Jenkins).
 
+### License agreement check
+
+Optionally, the bot can be configured to check that the pull request body includes the license agreement text from the template. 
+
+### Pull request tasks
+
+Optionally, the bot can also add a list of tasks to the pull request as a reminder of the steps to complete before 
+the pull request can be merged. This can be enabled per repository. Once enabled, the list of tasks per 
+issue type should be configured. If the Jira issue type doesn't have a list of tasks configured the default tasks will be used.
+
 ## Configuration
 
 ### Enabling the bot in a new repository
@@ -100,15 +110,37 @@ develocity:
          replacement: "$0"
        - pattern: "hibernate.search|elasticsearch|opensearch|main|\\d+.\\d+|PR-\\d+"
          replacement: "" # Just remove these tags
+licenseAgreement:
+   enabled: true
+   # Optionally provide the pattern to use for extracting the license text from the `PULL_REQUEST_TEMPLATE.md`
+   # Keep in mind that the bot expects that the license text to check is matched by the 1st group:
+   pullRequestTemplatePattern: .+(---.+---).+
+pullRequestTasks:
+   # Make the bot add list of tasks to the pull requests and enable the check that makes sure all tasks are completed:
+   enabled: true
+   # Tasks for a particular issue type, with `default` being a "unique" category:
+   tasks:
+      # List of tasks for commits without a Jira ID 
+      # or for those with Jira ID but that don't have a specific configuration for a corresponding issue type:
+      default:
+         - task1
+         - task2
+      # Tasks specific to the bug issue type:
+      bug:
+         - bug task1
+         - bug task2
+      # Tasks specific to the improvement issue type:
+      improvement:
+         - improvement task1
 ```
 
 ### Altering the infrastructure
 
 This should only be needed very rarely, so think twice before trying this.
 
-You will need admin rights in the Hibernate organization.
+You will need admin rights in the Hibernate organization and access to the OpenShift cluster.
 
-The infrastructure configuration can be found [here](https://github.com/hibernate/ci.hibernate.org).
+The infrastructure configuration can be found [here](src/main/resources/application.properties) under "#Deployment configuration".
 
 The GitHub registration of this bot can be found [here](https://github.com/organizations/hibernate/settings/apps/hibernate-github-bot).
 
