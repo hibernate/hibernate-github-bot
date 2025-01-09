@@ -18,6 +18,7 @@ import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.util.CommitMessages;
 import org.hibernate.infra.bot.util.GlobMatcher;
+import org.hibernate.infra.bot.util.Patterns;
 
 import org.jboss.logging.Logger;
 
@@ -283,12 +284,12 @@ public class CheckPullRequestContributionRules {
 
 		protected LicenseCheck(String agreementText) {
 			super( "Contribution — License agreement" );
-			this.agreementText = agreementText;
+			this.agreementText = Patterns.sanitizeNewLines( agreementText );
 		}
 
 		@Override
 		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
-			String body = context.pullRequest.getBody();
+			String body = Patterns.sanitizeNewLines( context.pullRequest.getBody() );
 			PullRequestCheckRunRule rule = output.rule( "The pull request description must contain the license agreement text." );
 			if ( body != null && body.contains( agreementText ) ) {
 				rule.passed();

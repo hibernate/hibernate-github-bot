@@ -34,7 +34,6 @@ public class EditPullRequestBodyAddTaskList {
 	private static final String START_MARKER = "<!-- Hibernate GitHub Bot task list start -->";
 
 	private static final String END_MARKER = "<!-- Hibernate GitHub Bot task list end -->";
-	private static final Set<Character> REGEX_ESCAPE_CHARS = Set.of( '(', ')', '[', ']', '{', '}', '\\', '.', '?', '*', '+' );
 
 	@Inject
 	DeploymentConfig deploymentConfig;
@@ -114,21 +113,9 @@ public class EditPullRequestBodyAddTaskList {
 	}
 
 	private boolean tasksAreTheSame(String currentTasks, String tasks) {
-		StringBuilder sb = new StringBuilder();
-		for ( char c : tasks.trim().toCharArray() ) {
-			if ( REGEX_ESCAPE_CHARS.contains( c ) ) {
-				sb.append( '\\' );
-			}
-			if ( c == '\n' ) {
-				sb.append( '\\' ).append( 'n' );
-			}
-			else {
-				sb.append( c );
-			}
-		}
 
-		return Patterns.compile( sb.toString().replace( "- \\[ \\]", "- \\[.\\]" ) )
-				.matcher( currentTasks.trim() )
+		return Patterns.compile( Patterns.escapeSpecialCharacters( Patterns.sanitizeNewLines( tasks.trim() ) ).replace( "- \\[ \\]", "- \\[.\\]" ) )
+				.matcher( Patterns.sanitizeNewLines( currentTasks.trim() ) )
 				.matches();
 	}
 
