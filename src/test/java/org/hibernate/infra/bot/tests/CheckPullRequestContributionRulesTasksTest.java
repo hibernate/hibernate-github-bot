@@ -213,4 +213,58 @@ public class CheckPullRequestContributionRulesTasksTest extends AbstractPullRequ
 				} );
 	}
 
+	@Test
+	void tasksCheckIgnored() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									jira:
+									  projectKey: "HSEARCH"
+									  # We also ignore jira keys check as dependabot PRs won't have them anyways:
+									  ignore:
+									    - user: dependabot[bot]
+									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
+									pullRequestTasks:
+									  enabled: true
+									  tasks:
+									    default:
+									      - task1
+									      - task2
+									      - task3
+									      - task4
+									    bug:
+									      - bug task1
+									      - bug task2
+									      - bug task3
+									      - bug task4
+									    improvement:
+									      - improvement task1
+									      - improvement task2
+									      - improvement task3
+									      - improvement task4
+									  ignore:
+									    - user: dependabot[bot]
+									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.noComments();
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-dependabot-upgrades-build-dependencies.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					verifyNoMoreInteractions( mocks.ghObjects() );
+				} );
+	}
+
 }

@@ -158,9 +158,8 @@ public class CheckPullRequestContributionRules {
 				&& repositoryConfig.licenseAgreement != null
 				&& repositoryConfig.licenseAgreement.getEnabled().orElse( Boolean.FALSE ) ) {
 			Matcher matcher = repositoryConfig.licenseAgreement.getPullRequestTemplatePattern().matcher( pullRequestTemplate );
-			if ( matcher.matches()
-					&& matcher.groupCount() == 1 ) {
-				checks.add( new LicenseCheck( matcher.group( 1 ).trim() ) );
+			if ( matcher.matches() && matcher.groupCount() == 1 ) {
+				checks.add( new LicenseCheck( matcher.group( 1 ).trim(), repositoryConfig.licenseAgreement.getIgnore() ) );
 			}
 			else {
 				throw new IllegalArgumentException( "Misconfigured license agreement check. Pattern should contain exactly 1 match group. Pattern: %s. Fetched Pull Request template: %s".formatted( repositoryConfig.licenseAgreement.getPullRequestTemplatePattern(), pullRequestTemplate ) );
@@ -169,7 +168,7 @@ public class CheckPullRequestContributionRules {
 
 		if ( repositoryConfig != null && repositoryConfig.pullRequestTasks != null
 				&& repositoryConfig.pullRequestTasks.getEnabled().orElse( Boolean.FALSE ) ) {
-			checks.add( new TasksCompletedCheck() );
+			checks.add( new TasksCompletedCheck(repositoryConfig.pullRequestTasks.getIgnore() ) );
 		}
 
 		return checks;
@@ -192,33 +191,25 @@ public class CheckPullRequestContributionRules {
 		}
 	}
 
-	static class JiraIssuesCheck extends PullRequestCheck {
+	static class JiraIssuesCheck extends IgnorablePullRequestCheck {
 
 		private final Pattern issueKeyPattern;
 
 		private final Integer issueLinksLimit;
 
-		private final List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations;
 		private final GlobMatcher ignoredFilesMatcher;
 
 		JiraIssuesCheck(Pattern issueKeyPattern, Integer issueLinksLimit,
 				List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations,
 				List<String> ignoreFilePatterns) {
-			super( "Contribution — JIRA issues" );
+			super( "Contribution — JIRA issues", ignoredPRConfigurations );
 			this.issueKeyPattern = issueKeyPattern;
 			this.issueLinksLimit = issueLinksLimit;
-			this.ignoredPRConfigurations = ignoredPRConfigurations;
 			this.ignoredFilesMatcher = new GlobMatcher( ignoreFilePatterns );
 		}
 
 		@Override
-		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
-			if ( !shouldCheckPullRequest( context ) ) {
-				// Means we have an ignore rule configured that matches our pull request.
-				// No need to check anything else.
-				return;
-			}
-
+		public void doPerform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
 			String title = context.pullRequest.getTitle();
 			String body = context.pullRequest.getBody();
 
@@ -263,32 +254,19 @@ public class CheckPullRequestContributionRules {
 				}
 			}
 		}
-
-		private boolean shouldCheckPullRequest(PullRequestCheckRunContext context) throws IOException {
-			GHUser author = context.pullRequest.getUser();
-			String title = context.pullRequest.getTitle();
-			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoredPRConfigurations ) {
-				if ( ignore.getUser().equals( author.getLogin() )
-						&& ignore.getTitlePattern().matcher( title ).matches() ) {
-					return false;
-				}
-			}
-
-			return true;
-		}
 	}
 
-	static class LicenseCheck extends PullRequestCheck {
+	static class LicenseCheck extends IgnorablePullRequestCheck {
 
 		private final String agreementText;
 
-		protected LicenseCheck(String agreementText) {
-			super( "Contribution — License agreement" );
+		protected LicenseCheck(String agreementText, List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations) {
+			super( "Contribution — License agreement", ignoredPRConfigurations );
 			this.agreementText = Patterns.sanitizeNewLines( agreementText );
 		}
 
 		@Override
-		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
+		public void doPerform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
 			String body = Patterns.sanitizeNewLines( context.pullRequest.getBody() );
 			PullRequestCheckRunRule rule = output.rule( "The pull request description must contain the license agreement text." );
 			if ( body != null && body.contains( agreementText ) ) {
@@ -305,17 +283,53 @@ public class CheckPullRequestContributionRules {
 		}
 	}
 
-	static class TasksCompletedCheck extends PullRequestCheck {
+	static class TasksCompletedCheck extends IgnorablePullRequestCheck {
 
-		protected TasksCompletedCheck() {
-			super( "Contribution — Review tasks" );
+		protected TasksCompletedCheck(List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations) {
+			super( "Contribution — Review tasks", ignoredPRConfigurations );
 		}
 
 		@Override
-		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
+		public void doPerform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
 			String body = context.pullRequest.getBody();
 			output.rule( "All pull request tasks should be completed." )
 					.result( !EditPullRequestBodyAddTaskList.containsUnfinishedTasks( body ) );
+		}
+	}
+
+	static abstract class IgnorablePullRequestCheck extends PullRequestCheck {
+
+		private final List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations;
+
+		protected IgnorablePullRequestCheck(String title, List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations) {
+			super( title );
+			this.ignoredPRConfigurations = ignoredPRConfigurations;
+		}
+
+		@Override
+		public final void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
+			if ( !shouldCheckPullRequest( context ) ) {
+				// Means we have an ignore rule configured that matches our pull request.
+				// No need to check anything else.
+				return;
+			}
+
+			doPerform( context, output );
+		}
+
+		abstract void doPerform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException;
+
+		protected boolean shouldCheckPullRequest(PullRequestCheckRunContext context) throws IOException {
+			GHUser author = context.pullRequest.getUser();
+			String title = context.pullRequest.getTitle();
+			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoredPRConfigurations ) {
+				if ( ignore.getUser().equals( author.getLogin() )
+						&& ignore.getTitlePattern().matcher( title ).matches() ) {
+					return false;
+				}
+			}
+
+			return true;
 		}
 	}
 
