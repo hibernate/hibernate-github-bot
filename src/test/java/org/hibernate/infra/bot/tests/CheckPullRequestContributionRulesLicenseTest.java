@@ -156,4 +156,56 @@ public class CheckPullRequestContributionRulesLicenseTest extends AbstractPullRe
 				} );
 	}
 
+	@Test
+	void licenseCheckIgnored() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									jira:
+									  projectKey: "HSEARCH"
+									  # We also ignore jira keys check as dependabot PRs won't have them anyways:
+									  ignore:
+									    - user: dependabot[bot]
+									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
+									licenseAgreement:
+									  enabled: true
+									  ignore:
+									    - user: dependabot[bot]
+									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
+									""" );
+					mocks.configFile("PULL_REQUEST_TEMPLATE.md")
+							.fromString( """
+									[Please describe here what your change is about]
+									
+									<!--
+									Please read and do not remove the following lines:
+									-->
+									----------------------
+									By submitting this pull request, I confirm that my contribution is made under the terms of the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.txt)
+									and can be relicensed under the terms of the [LGPL v2.1 license](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt) in the future at the maintainers' discretion.
+									For more information on licensing, please check [here](https://github.com/hibernate/hibernate-search/blob/main/CONTRIBUTING.md#legal).
+									
+									----------------------
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.noComments();
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-dependabot-upgrades-build-dependencies.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					verifyNoMoreInteractions( mocks.ghObjects() );
+				} );
+	}
+
 }

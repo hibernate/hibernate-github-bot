@@ -138,6 +138,7 @@ public class RepositoryConfig {
 	public static class LicenseAgreement {
 		private Optional<Boolean> enabled = Optional.empty();
 		private Pattern pullRequestTemplatePattern = Patterns.compile( ".+([-]{22}.+[-]{22}).++" );
+		private List<IgnoreConfiguration> ignore = Collections.emptyList();
 
 		public Optional<Boolean> getEnabled() {
 			return enabled;
@@ -154,12 +155,21 @@ public class RepositoryConfig {
 		public void setPullRequestTemplatePattern(String pullRequestTemplatePattern) {
 			this.pullRequestTemplatePattern = Patterns.compile( pullRequestTemplatePattern );
 		}
+
+		public List<IgnoreConfiguration> getIgnore() {
+			return ignore;
+		}
+
+		public void setIgnore(List<IgnoreConfiguration> ignore) {
+			this.ignore = ignore;
+		}
 	}
 
 	public static class TaskList {
 		private static final String DEFAULT_TASKS_CATEGORY = "default";
 		private Optional<Boolean> enabled = Optional.empty();
 		private Map<String, List<String>> tasks = new HashMap<>();
+		private List<IgnoreConfiguration> ignore = Collections.emptyList();
 
 		public Optional<Boolean> getEnabled() {
 			return enabled;
@@ -179,6 +189,14 @@ public class RepositoryConfig {
 
 		public List<String> defaultTasks() {
 			return tasks.getOrDefault( DEFAULT_TASKS_CATEGORY, List.of() );
+		}
+
+		public List<IgnoreConfiguration> getIgnore() {
+			return ignore;
+		}
+
+		public void setIgnore(List<IgnoreConfiguration> ignore) {
+			this.ignore = ignore;
 		}
 	}
 }

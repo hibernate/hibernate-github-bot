@@ -27,6 +27,7 @@ import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestCommitDetail;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHUser;
 
 public class EditPullRequestBodyAddTaskList {
 	private static final Logger LOG = Logger.getLogger( EditPullRequestBodyAddTaskList.class );
@@ -58,7 +59,7 @@ public class EditPullRequestBodyAddTaskList {
 			return;
 		}
 
-		if ( !shouldCheck( repository, pullRequest ) ) {
+		if ( !shouldCheck( repository, pullRequest, repositoryConfig.pullRequestTasks.getIgnore() ) ) {
 			return;
 		}
 
@@ -175,7 +176,15 @@ public class EditPullRequestBodyAddTaskList {
 		}
 	}
 
-	private boolean shouldCheck(GHRepository repository, GHPullRequest pullRequest) {
+	private boolean shouldCheck(GHRepository repository, GHPullRequest pullRequest, List<RepositoryConfig.IgnoreConfiguration> ignoredPRConfigurations) throws IOException {
+		GHUser author = pullRequest.getUser();
+		String title = pullRequest.getTitle();
+		for ( RepositoryConfig.IgnoreConfiguration ignore : ignoredPRConfigurations ) {
+			if ( ignore.getUser().equals( author.getLogin() )
+					&& ignore.getTitlePattern().matcher( title ).matches() ) {
+				return false;
+			}
+		}
 		return !GHIssueState.CLOSED.equals( pullRequest.getState() )
 				&& repository.getId() == pullRequest.getBase().getRepository().getId();
 	}
