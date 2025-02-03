@@ -24,3 +24,14 @@ updates:
       # We don't want to stay on an LTS version and want to have more regular updates here:
       - dependency-name: "io.quarkiverse.openapi.generator:*"
         versions: ["2.6.0-lts", "2.7.0-lts", "2.8.0-lts", "2.9.0-lts"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "actions/*"
+      - dependency-name: "redhat-actions/*"
