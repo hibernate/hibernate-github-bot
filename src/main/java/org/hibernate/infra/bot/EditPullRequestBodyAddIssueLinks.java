@@ -108,25 +108,20 @@ public class EditPullRequestBodyAddIssueLinks {
 
 	private String constructLinksSection(Set<String> issueKeys, String body) {
 		final String lowerCaseBody = body.toLowerCase( Locale.ROOT );
-		final List<String> keys = new ArrayList<>( issueKeys.size() );
+		final List<String> links = new ArrayList<>( issueKeys.size() );
 		for ( String key : issueKeys ) {
 			// Add links for issue keys that are not already found in the original PR body
-			if ( !lowerCaseBody.contains( key.toLowerCase( Locale.ROOT ) ) ) {
-				keys.add( key );
+			String link = String.format( Locale.ROOT, LINK_TEMPLATE, key );
+			if ( !lowerCaseBody.contains( link.toLowerCase( Locale.ROOT ) ) ) {
+				links.add( link );
 			}
 		}
 
-		if ( keys.isEmpty() ) {
+		if ( links.isEmpty() ) {
 			return null;
 		}
 
-		// Try to pre-size the StringBuilder with the correct capacity
-		final int linkSize = LINK_TEMPLATE.length() + keys.get( 0 ).length() + 1;
-		final StringBuilder sb = new StringBuilder( linkSize * keys.size() );
-		for ( final String key : keys ) {
-			sb.append( String.format( LINK_TEMPLATE, key ) ).append( '\n' );
-		}
-		return START_MARKER + "\n" + EDITOR_WARNING + sb + END_MARKER;
+		return String.format( Locale.ROOT, "%s\n%s%s\n%s", START_MARKER, EDITOR_WARNING, String.join( "\n", links ), END_MARKER );
 	}
 
 	private static String removeLinksSection(String originalBody, int startIndex, int endIndex) {
