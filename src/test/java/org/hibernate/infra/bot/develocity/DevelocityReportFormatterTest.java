@@ -84,44 +84,44 @@ class DevelocityReportFormatterTest {
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `hibernate-search` `jdk-17` `main`\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `elasticsearch` `elasticsearch-8.13` `h2` `hibernate-search` `jdk-17` `lucene` `main`\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows Server 2022` `hibernate-search` `jdk-17` `main`\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows Server 2022` `h2` `hibernate-search` `jdk-17` `lucene` `main`\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `hibernate-search` `jdk-17` `PR-4125`\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux` `elasticsearch` `elasticsearch-8.13` `h2` `hibernate-search` `jdk-17` `lucene`\
 						|`clean verify`\
-						|[:red_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
-						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests?outcome=FAILED&outcome=FLAKY "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:red_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/failures "Build Scan")\
+						 [:x:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests?outcome=FAILED&outcome=FLAKY "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						""" );
 	}
@@ -213,44 +213,44 @@ class DevelocityReportFormatterTest {
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`||\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`|`es-8.13` `lucene`|`h2`\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows`|`17`||\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Windows`|`17`|`lucene`|`h2`\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`||\
 						|`clean install`\
-						|[:green_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy "Build Scan")\
-						 [:white_check_mark:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:green_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy "Build Scan")\
+						 [:white_check_mark:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 						|[hibernate-search/PR-4125](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
 						|`Linux`|`17`|`es-8.13` `lucene`|`h2`\
 						|`clean verify`\
-						|[:red_circle:](https://ge.hibernate.org/s/45fv2rr67ofuy/failures "Build Scan")\
-						 [:x:](https://ge.hibernate.org/s/45fv2rr67ofuy/tests?outcome=FAILED&outcome=FLAKY "Tests")\
-						 [:page_with_curl:](https://ge.hibernate.org/s/45fv2rr67ofuy/console-log "Logs")\
+						|[:red_circle:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/failures "Build Scan")\
+						 [:x:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests?outcome=FAILED&outcome=FLAKY "Tests")\
+						 [:page_with_curl:](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log "Logs")\
 						|
 								""" );
 	}
@@ -261,10 +261,10 @@ class DevelocityReportFormatterTest {
 				URI.create( "https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/" ),
 				stage, 0L,
 				tags, goals, status, testStatus,
-				URI.create( "https://ge.hibernate.org/s/45fv2rr67ofuy" ),
-				URI.create( "https://ge.hibernate.org/s/45fv2rr67ofuy/failures" ),
-				URI.create( "https://ge.hibernate.org/s/45fv2rr67ofuy/tests" ),
-				URI.create( "https://ge.hibernate.org/s/45fv2rr67ofuy/console-log" ) );
+				URI.create( "https://develocity.commonhaus.dev/s/45fv2rr67ofuy" ),
+				URI.create( "https://develocity.commonhaus.dev/s/45fv2rr67ofuy/failures" ),
+				URI.create( "https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests" ),
+				URI.create( "https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log" ) );
 	}
 
 	@Test
@@ -276,7 +276,7 @@ class DevelocityReportFormatterTest {
 						"""
 
 
-								Didn't find your build? Try [this search query](https://ge.hibernate.org/scans?search.query=%28value%3A%22CI+job%3Dhibernate-orm-pipeline%2FPR-9171%22+and+value%3A%22CI+build+number%3D1%22%29+or+%28value%3A%22CI+run%3D11552691889%22%29&search.startTimeMin=1&search.startTimeMax=1761609600000&search.timeZoneId=UTC)
+								Didn't find your build? Try [this search query](https://develocity.commonhaus.dev/scans?search.query=%28value%3A%22CI+job%3Dhibernate-orm-pipeline%2FPR-9171%22+and+value%3A%22CI+build+number%3D1%22%29+or+%28value%3A%22CI+run%3D11552691889%22%29&search.startTimeMin=1&search.startTimeMax=1761609600000&search.timeZoneId=UTC)
 								""" );
 	}
 
@@ -289,7 +289,7 @@ class DevelocityReportFormatterTest {
 						"""
 
 
-								Didn't find your build? Try [this search query](https://ge.hibernate.org/scans?search.query=%28value%3A%22CI+job%3Dhibernate-orm-pipeline%2FPR-9171%22+and+value%3A%22CI+build+number%3D1%22%29+or+%28value%3A%22CI+run%3D11552691889%22%29&search.startTimeMin=1&search.startTimeMax=1761609600000&search.timeZoneId=UTC)
+								Didn't find your build? Try [this search query](https://develocity.commonhaus.dev/scans?search.query=%28value%3A%22CI+job%3Dhibernate-orm-pipeline%2FPR-9171%22+and+value%3A%22CI+build+number%3D1%22%29+or+%28value%3A%22CI+run%3D11552691889%22%29&search.startTimeMin=1&search.startTimeMax=1761609600000&search.timeZoneId=UTC)
 
 								Full query sent to Develocity:
 
