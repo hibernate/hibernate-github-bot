@@ -144,9 +144,7 @@ The infrastructure configuration can be found [here](src/main/resources/applicat
 
 The GitHub registration of this bot can be found [here](https://github.com/organizations/hibernate/settings/apps/hibernate-github-bot).
 
-## Contributing
-
-### Development and testing
+## Development and testing
 
 Always test your changes locally before pushing them.
 
@@ -158,14 +156,19 @@ You can run the bot locally by:
    [as explained here](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/create-github-app.html#_initialize_the_configuration).   
 3. Running `./mvnw quarkus:dev`.
 
-### Deployment
+## Deployment
+
+### Current process
 
 Just push to the `main` branch.
 
 The `main` branch is automatically deployed in production through
 [this GitHub action](.github/workflows/deploy.yml). The app is pushed to an OpenShift cluster.
 
-### Maintenance
+Maintainers can review the application, check the current health and update configuration/secrets on the OpenShift console.
 
-You can check the current health of the bot at the corresponding project in the OpenShift console.
-See the team resources for more details.
+Link to the console: https://console-openshift-console.apps.ospo-osci.z3b1.p1.openshiftapps.com/k8s/cluster/projects/prod-hibernate-infra
+
+### Setting it up
+
+TODO: document this someday... See https://github.com/quarkusio/search.quarkus.io/blob/main/README.adoc#setting-it-up
