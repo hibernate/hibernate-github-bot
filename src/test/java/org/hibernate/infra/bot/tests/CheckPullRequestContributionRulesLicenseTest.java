@@ -2,12 +2,15 @@ package org.hibernate.infra.bot.tests;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.infra.bot.tests.PullRequestMockHelper.mockPagedIterable;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +20,15 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.kohsuke.github.GHCheckRun;
 import org.kohsuke.github.GHCheckRunBuilder;
 import org.kohsuke.github.GHEvent;
+import org.kohsuke.github.GHOrganization;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHTeam;
+import org.kohsuke.github.GHUser;
+import org.kohsuke.github.GitHub;
+import org.kohsuke.github.PagedIterable;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @QuarkusTest
@@ -201,6 +210,69 @@ public class CheckPullRequestContributionRulesLicenseTest extends AbstractPullRe
 				} )
 				.when()
 				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-dependabot-upgrades-build-dependencies.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					verifyNoMoreInteractions( mocks.ghObjects() );
+				} );
+	}
+
+	@Test
+	void licenseCheckIgnoredByTeam() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( """
+									jira:
+									  projectKey: "HSEARCH"
+									  # We also ignore jira keys check as dependabot PRs won't have them anyways:
+									  ignore:
+									    - user: dependabot[bot]
+									      titlePattern: ".*\\\\bmaven\\\\b.*\\\\bplugin\\\\b.*"
+									licenseAgreement:
+									  enabled: true
+									  ignore:
+									    - team:
+									        name: skippable
+									        organization: hibernate
+									      titlePattern: ".*+"
+									""" );
+					mocks.configFile( "PULL_REQUEST_TEMPLATE.md" )
+							.fromString( """
+									[Please describe here what your change is about]
+									
+									<!--
+									Please read and do not remove the following lines:
+									-->
+									----------------------
+									By submitting this pull request, I confirm that my contribution is made under the terms of the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.txt)
+									and can be relicensed under the terms of the [LGPL v2.1 license](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt) in the future at the maintainers' discretion.
+									For more information on licensing, please check [here](https://github.com/hibernate/hibernate-search/blob/main/CONTRIBUTING.md#legal).
+									
+									----------------------
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+					GitHub gitHubMock = mocks.installationClient( 15144501L ); // see the submitted JSON file for this value
+					GHOrganization organization = mock( GHOrganization.class );
+					GHTeam team = mock( GHTeam.class );
+					GHUser user = mock( GHUser.class );
+					when( user.getLogin() ).thenReturn( "dependabot[bot]" );
+					PagedIterable<GHUser> page = mockPagedIterable( List.of( user ) );
+					when( team.listMembers() ).thenReturn( page );
+					when( organization.getTeamByName( ArgumentMatchers.eq( "skippable" ) ) ).thenReturn( team );
+					when( gitHubMock.getOrganization( ( anyString() ) ) ).thenReturn( organization );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.noComments();
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-skippable-team-member.json" )
 				.event( GHEvent.PULL_REQUEST )
 				.then()
 				.github( mocks -> {

@@ -69,6 +69,14 @@ jira:
       titlePattern: ".*\\bmaven\\b.*\\bplugin\\b.*" # will ignore build dependency upgrades i.e. maven plugin version upgrades.
     - user: all-contributors[bot]
       titlePattern: ".*"
+      # ignore check rule can also be performed against a GH team within an org.
+      # in such case the username is ignored and only team/title are considered:
+    - team:
+        # A team name within the organization: 
+        name: team-name
+        # Organization name, i.e. hibernate
+        organization: org-name
+      titlePattern: ".*"  
   # To skip commits that contain only irrelevant files for JIRA-related checks (commit includes JIRA issue key),
   # a list of ignored files rules can be configured:
   ignoreFiles:
