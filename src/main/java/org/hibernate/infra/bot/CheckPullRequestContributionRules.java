@@ -32,7 +32,9 @@ import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestCommitDetail;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHTeam;
 import org.kohsuke.github.GHUser;
+import org.kohsuke.github.GitHub;
 
 public class CheckPullRequestContributionRules {
 
@@ -58,35 +60,36 @@ public class CheckPullRequestContributionRules {
 			@PullRequest.Opened @PullRequest.Reopened @PullRequest.Edited @PullRequest.Synchronize
 			GHEventPayload.PullRequest payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig,
-			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate) throws IOException {
-		checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequestTemplate, payload.getPullRequest() );
+			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate,
+			GitHub gitHub) throws IOException {
+		checkPullRequestContributionRules( payload.getRepository(), gitHub, repositoryConfig, pullRequestTemplate, payload.getPullRequest() );
 	}
 
 	void checkRunRequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig,
-			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate) throws IOException {
+			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate,
+			GitHub gitHub) throws IOException {
 		for ( GHPullRequest pullRequest : payload.getCheckRun().getPullRequests() ) {
-			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequestTemplate, pullRequest );
+			checkPullRequestContributionRules( payload.getRepository(), gitHub, repositoryConfig, pullRequestTemplate, pullRequest );
 		}
 	}
 
 	void checkSuiteRequested(@CheckSuite.Requested @CheckSuite.Rerequested GHEventPayload.CheckSuite payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig,
-			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate) throws IOException {
+			@ConfigFile("PULL_REQUEST_TEMPLATE.md") String pullRequestTemplate,
+			GitHub gitHub) throws IOException {
 		for ( GHPullRequest pullRequest : payload.getCheckSuite().getPullRequests() ) {
-			checkPullRequestContributionRules( payload.getRepository(), repositoryConfig, pullRequestTemplate, pullRequest );
+			checkPullRequestContributionRules( payload.getRepository(), gitHub, repositoryConfig, pullRequestTemplate, pullRequest );
 		}
 	}
 
-	private void checkPullRequestContributionRules(GHRepository repository, RepositoryConfig repositoryConfig,
-			String pullRequestTemplate,
-			GHPullRequest pullRequest)
-			throws IOException {
+	private void checkPullRequestContributionRules(GHRepository repository, GitHub gitHub, RepositoryConfig repositoryConfig,
+			String pullRequestTemplate, GHPullRequest pullRequest) throws IOException {
 		if ( !shouldCheck( repository, pullRequest ) ) {
 			return;
 		}
 
-		PullRequestCheckRunContext context = new PullRequestCheckRunContext( deploymentConfig, repository, repositoryConfig, pullRequest );
+		PullRequestCheckRunContext context = new PullRequestCheckRunContext( deploymentConfig, gitHub, repository, repositoryConfig, pullRequest );
 		List<PullRequestCheck> checks = createChecks( repositoryConfig, pullRequestTemplate );
 		List<PullRequestCheckRunOutput> outputs = new ArrayList<>();
 		for ( PullRequestCheck check : checks ) {
@@ -323,8 +326,21 @@ public class CheckPullRequestContributionRules {
 			GHUser author = context.pullRequest.getUser();
 			String title = context.pullRequest.getTitle();
 			for ( RepositoryConfig.IgnoreConfiguration ignore : ignoredPRConfigurations ) {
-				if ( ignore.getUser().equals( author.getLogin() )
-						&& ignore.getTitlePattern().matcher( title ).matches() ) {
+				if ( ignore.getTeam().isPresent() ) {
+					boolean userTeamCanSkip = false;
+					var teamToFind = ignore.getTeam().get();
+					GHTeam team = context.gitHub.getOrganization( teamToFind.getOrganization() ).getTeamByName( teamToFind.getName() );
+					for ( GHUser user : team.listMembers() ) {
+						if ( user.getLogin().equals( author.getLogin() ) ) {
+							userTeamCanSkip = true;
+							break;
+						}
+					}
+					if ( userTeamCanSkip && ignore.getTitlePattern().matcher( title ).matches() ) {
+						return false;
+					}
+				}
+				else if ( ignore.getUser().equals( author.getLogin() ) && ignore.getTitlePattern().matcher( title ).matches() ) {
 					return false;
 				}
 			}

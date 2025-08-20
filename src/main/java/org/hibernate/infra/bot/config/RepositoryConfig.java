@@ -75,6 +75,7 @@ public class RepositoryConfig {
 
 		private String user;
 		private Pattern titlePattern;
+		private Optional<GitHubTeam> team = Optional.empty();
 
 		public String getUser() {
 			return user;
@@ -90,6 +91,35 @@ public class RepositoryConfig {
 
 		public void setTitlePattern(String titlePattern) {
 			this.titlePattern = Patterns.compile( titlePattern );
+		}
+
+		public Optional<GitHubTeam> getTeam() {
+			return team;
+		}
+
+		public void setTeam(GitHubTeam team) {
+			this.team = Optional.of( team );
+		}
+
+		public static class GitHubTeam {
+			private String name;
+			private String organization;
+
+			public String getName() {
+				return name;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public String getOrganization() {
+				return organization;
+			}
+
+			public void setOrganization(String organization) {
+				this.organization = organization;
+			}
 		}
 	}
 
