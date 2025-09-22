@@ -46,6 +46,7 @@
     <quarkus-helm.version>1.2.7</quarkus-helm.version>
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
     <assertj.version>3.27.0</assertj.version>
+    <github-api.version>1.330</github-api.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -63,6 +64,12 @@
       <groupId>io.quarkiverse.githubapp</groupId>
       <artifactId>quarkus-github-app</artifactId>
       <version>${quarkus-github-app.version}</version>
+    </dependency>
+    <!-- Remove management of the github-api dependency when quarkus-github-app ^ is updated to the next version compatible with Quarkus 3.28+ -->
+    <dependency>
+      <groupId>org.kohsuke</groupId>
+      <artifactId>github-api</artifactId>
+      <version>${github-api.version}</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
