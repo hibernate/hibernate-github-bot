@@ -140,6 +140,15 @@ pullRequestTasks:
       # Tasks specific to the improvement issue type:
       improvement:
          - improvement task1
+branches:
+  # Make the bot add a label with the name of base ref when a pull requests target a non-main branch.
+  enabled: true
+  # Prefix is only added when a prefix format is passed. Must contain a single %s that will be replaced with the base ref 
+  titlePrefix: "[%s]"
+  # Label is only added when a label format is passed. Must contain a single %s that will be replaced with the base ref
+  label: "branch-%s"
+  ignore:
+    # as other config sections, supports ignore rules
 ```
 
 ### Altering the infrastructure
