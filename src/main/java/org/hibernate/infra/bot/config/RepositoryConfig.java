@@ -20,6 +20,8 @@ public class RepositoryConfig {
 
 	public TaskList pullRequestTasks;
 
+	public BranchLabel branches;
+
 	public static class JiraConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
 
@@ -227,6 +229,45 @@ public class RepositoryConfig {
 
 		public void setIgnore(List<IgnoreConfiguration> ignore) {
 			this.ignore = ignore;
+		}
+	}
+
+	public static class BranchLabel {
+		private Optional<Boolean> enabled = Optional.empty();
+		private List<IgnoreConfiguration> ignore = Collections.emptyList();
+		private Optional<String> label = Optional.empty();
+		private Optional<String> titlePrefix = Optional.empty();
+
+		public Optional<Boolean> getEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(Boolean enabled) {
+			this.enabled = Optional.of( enabled );
+		}
+
+		public List<IgnoreConfiguration> getIgnore() {
+			return ignore;
+		}
+
+		public void setIgnore(List<IgnoreConfiguration> ignore) {
+			this.ignore = ignore;
+		}
+
+		public Optional<String> getLabel() {
+			return label;
+		}
+
+		public void setLabel(String label) {
+			this.label = Optional.of( label );
+		}
+
+		public Optional<String> getTitlePrefix() {
+			return titlePrefix;
+		}
+
+		public void setTitlePrefix(String titlePrefix) {
+			this.titlePrefix = Optional.of( titlePrefix );
 		}
 	}
 }
