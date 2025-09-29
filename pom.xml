@@ -30,7 +30,7 @@
     <revision>999-SNAPSHOT</revision>
     <maven.min.version>3.9.11</maven.min.version>
     <maven-wrapper-plugin.version>3.3.4</maven-wrapper-plugin.version>
-    <compiler-plugin.version>3.14.0</compiler-plugin.version>
+    <compiler-plugin.version>3.14.1</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
