@@ -5,10 +5,12 @@ public final class PullRequestCheckRunRule {
 	final String description;
 
 	boolean passed;
+    boolean includeComment;
 	String commentOrNull;
 
-	public PullRequestCheckRunRule(String description) {
+	public PullRequestCheckRunRule(String description, boolean includeComment) {
 		this.description = description;
+        this.includeComment = includeComment;
 	}
 
 	public void result(boolean passed) {
