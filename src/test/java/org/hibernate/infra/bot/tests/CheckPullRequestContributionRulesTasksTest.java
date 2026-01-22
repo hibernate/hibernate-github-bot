@@ -2,8 +2,10 @@ package org.hibernate.infra.bot.tests;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -197,18 +199,7 @@ public class CheckPullRequestContributionRulesTasksTest extends AbstractPullRequ
 				.then()
 				.github( mocks -> {
 					GHPullRequest prMock = mocks.pullRequest( prId );
-					ArgumentCaptor<String> commentCaptor = ArgumentCaptor.forClass( String.class );
-					verify( prMock ).comment( commentCaptor.capture() );
-					assertThat( commentCaptor.getValue() )
-							.isEqualTo( """
-									Thanks for your pull request!
-
-									This pull request does not follow the contribution rules. Could you have a look?
-
-									❌ All pull request tasks should be completed.
-
-									› This message was automatically generated.""" );
-
+					verify( prMock, times(0) ).comment( any() );
 					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );
 	}

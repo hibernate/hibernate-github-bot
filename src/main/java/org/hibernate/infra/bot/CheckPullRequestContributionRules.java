@@ -96,15 +96,15 @@ public class CheckPullRequestContributionRules {
 			outputs.add( PullRequestCheck.run( context, check ) );
 		}
 
-		boolean passed = outputs.stream().allMatch( PullRequestCheckRunOutput::passed );
+		boolean hasNothingToComment = outputs.stream().noneMatch( PullRequestCheckRunOutput::hasSomethingToComment );
 		GHIssueComment existingComment = findExistingComment( pullRequest );
 		// Avoid creating noisy comments for no reason, in particular if checks passed
 		// or if the pull request was already closed.
-		if ( existingComment == null && ( passed || GHIssueState.CLOSED.equals( pullRequest.getState() ) ) ) {
+		if ( existingComment == null && ( hasNothingToComment || GHIssueState.CLOSED.equals( pullRequest.getState() ) ) ) {
 			return;
 		}
 
-		StringBuilder message = new StringBuilder( passed ? COMMENT_INTRO_PASSED : COMMENT_INTRO_FAILED );
+		StringBuilder message = new StringBuilder( hasNothingToComment ? COMMENT_INTRO_PASSED : COMMENT_INTRO_FAILED );
 		outputs.forEach( output -> output.appendFailingRules( message ) );
 		message.append( COMMENT_FOOTER );
 
@@ -295,7 +295,7 @@ public class CheckPullRequestContributionRules {
 		@Override
 		public void doPerform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
 			String body = context.pullRequest.getBody();
-			output.rule( "All pull request tasks should be completed." )
+			output.rule( "All pull request tasks should be completed.", false )
 					.result( !EditPullRequestBodyAddTaskList.containsUnfinishedTasks( body ) );
 		}
 	}

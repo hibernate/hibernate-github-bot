@@ -15,15 +15,23 @@ public final class PullRequestCheckRunOutput {
 		this.name = name;
 	}
 
-	public PullRequestCheckRunRule rule(String description) {
-		PullRequestCheckRunRule rule = new PullRequestCheckRunRule( description );
+    public PullRequestCheckRunRule rule(String description) {
+        return rule(description, true);
+    }
+
+	public PullRequestCheckRunRule rule(String description, boolean includeComment) {
+		PullRequestCheckRunRule rule = new PullRequestCheckRunRule( description, includeComment );
 		rules.add( rule );
 		return rule;
 	}
 
-	public boolean passed() {
-		return rules.stream().allMatch( r -> r.passed );
-	}
+    public boolean passed() {
+        return rules.stream().allMatch( r -> r.passed );
+    }
+
+    public boolean hasSomethingToComment() {
+        return rules.stream().anyMatch( r -> r.includeComment && !r.passed);
+    }
 
 	public String title() {
 		List<PullRequestCheckRunRule> failingRules = rules.stream().filter( r -> !r.passed ).toList();
@@ -48,9 +56,9 @@ public final class PullRequestCheckRunOutput {
 		appendRules( comment, false );
 	}
 
-	private void appendRules(StringBuilder comment, boolean includePassed) {
+	private void appendRules(StringBuilder comment, boolean includeAll) {
 		for ( PullRequestCheckRunRule rule : rules ) {
-			if ( rule.passed && !includePassed ) {
+            if (!includeAll && (rule.passed || !rule.includeComment)) {
 				continue;
 			}
 			String emoji = rule.passed ? "✔" : "❌";
