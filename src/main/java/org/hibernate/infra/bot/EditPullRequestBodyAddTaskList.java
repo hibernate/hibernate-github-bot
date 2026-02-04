@@ -64,7 +64,6 @@ public class EditPullRequestBodyAddTaskList {
 		}
 
 		final Set<String> issueKeys = new HashSet<>();
-		boolean genericTasksRequired = false;
 		if ( repositoryConfig.jira.getIssueKeyPattern().isPresent() ) {
 			Pattern issueKeyPattern = repositoryConfig.jira.getIssueKeyPattern().get();
 
@@ -75,16 +74,12 @@ public class EditPullRequestBodyAddTaskList {
 						commit.getMessage()
 				);
 				issueKeys.addAll( commitIssueKeys );
-				genericTasksRequired = genericTasksRequired || commitIssueKeys.isEmpty();
 			}
-		}
-		else {
-			genericTasksRequired = true;
 		}
 
 		final String originalBody = Objects.toString( pullRequest.getBody(), "" );
 		final String currentTasks = currentTaskBody( originalBody );
-		final String tasks = generateTaskList( repositoryConfig.pullRequestTasks, genericTasksRequired, issueKeys );
+		final String tasks = generateTaskList( repositoryConfig.pullRequestTasks, issueKeys );
 
 		String body;
 
@@ -120,25 +115,20 @@ public class EditPullRequestBodyAddTaskList {
 				.matches();
 	}
 
-	private String generateTaskList(RepositoryConfig.TaskList taskListConfiguration, boolean genericTasksRequired, Set<String> issueKeys) {
-		if ( !genericTasksRequired && issueKeys.isEmpty() ) {
+	private String generateTaskList(RepositoryConfig.TaskList taskListConfiguration, Set<String> issueKeys) {
+		if ( issueKeys.isEmpty() ) {
 			return null;
 		}
 		StringBuilder taskList = new StringBuilder();
 		taskList.append( "Please make sure that the following tasks are completed:\n" );
-		if ( genericTasksRequired ) {
-			addTasks( taskList, taskListConfiguration.defaultTasks() );
-		}
-		if ( !issueKeys.isEmpty() ) {
-			JiraIssues issues = jiraRestClient.find( "key IN (" + String.join( ",", issueKeys ) + ") ORDER BY KEY DESC", "issuetype,key" );
-			for ( JiraIssue issue : issues.issues ) {
-				taskList.append( "Tasks specific to " )
-						.append( issue.key )
-						.append( " (" )
-						.append( issue.fields.issuetype.name )
-						.append( "):\n" );
-				addTasks( taskList, taskListConfiguration.getTasks().getOrDefault( issue.fields.issuetype.name.toLowerCase( Locale.ROOT ), taskListConfiguration.defaultTasks() ) );
-			}
+		JiraIssues issues = jiraRestClient.find( "key IN (" + String.join( ",", issueKeys ) + ") ORDER BY KEY DESC", "issuetype,key" );
+		for ( JiraIssue issue : issues.issues ) {
+			taskList.append( "Tasks specific to " )
+					.append( issue.key )
+					.append( " (" )
+					.append( issue.fields.issuetype.name )
+					.append( "):\n" );
+			addTasks( taskList, taskListConfiguration.getTasks().getOrDefault( issue.fields.issuetype.name.toLowerCase( Locale.ROOT ), taskListConfiguration.defaultTasks() ) );
 		}
 
 		return taskList.toString();

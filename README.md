@@ -128,8 +128,7 @@ pullRequestTasks:
    enabled: true
    # Tasks for a particular issue type, with `default` being a "unique" category:
    tasks:
-      # List of tasks for commits without a Jira ID 
-      # or for those with Jira ID but that don't have a specific configuration for a corresponding issue type:
+      # List of tasks for commits with Jira ID but that don't have a specific configuration for a corresponding issue type:
       default:
          - task1
          - task2
