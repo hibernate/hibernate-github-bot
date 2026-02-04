@@ -137,11 +137,6 @@ public class CheckPullRequestContributionRulesTasksTest extends AbstractPullRequ
 									 ---
 									 <!-- Hibernate GitHub Bot task list start -->
 									 Please make sure that the following tasks are completed:
-									 - [ ] task1
-									 - [ ] task2
-									 - [ ] task3
-									 - [ ] task4
-
 									 Tasks specific to HSEARCH-1111 (bug):
 									 - [ ] bug task1
 									 - [ ] bug task2
