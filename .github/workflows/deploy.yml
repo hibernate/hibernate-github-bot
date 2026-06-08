@@ -80,7 +80,7 @@ jobs:
       - name: Generate app version
         id: app-version
         run: |
-          echo "VALUE=1.0.0-$(date -u "+%Y%m%d%H%M%S")-\"$COMMIT_SHA\"" >> "$GITHUB_OUTPUT"
+          echo "VALUE=1.0.0-$(date -u "+%Y%m%d%H%M%S")-$COMMIT_SHA" >> "$GITHUB_OUTPUT"
         env:
           COMMIT_SHA: ${{ github.sha }}
 
