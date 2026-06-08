@@ -80,17 +80,21 @@ jobs:
       - name: Generate app version
         id: app-version
         run: |
-          echo "VALUE=1.0.0-$(date -u '+%Y%m%d%H%M%S')-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "VALUE=1.0.0-$(date -u "+%Y%m%d%H%M%S")-\"$COMMIT_SHA\"" >> "$GITHUB_OUTPUT"
+        env:
+          COMMIT_SHA: ${{ github.sha }}
 
       - name: Build and push app container image
         run: |
           ./mvnw clean package -DskipTests \
-            -Drevision="${{ steps.app-version.outputs.value }}" \
+            -Drevision="$APP_VERSION" \
             -Dquarkus.container-image.build=true \
             -Dquarkus.container-image.push=true \
             -Dquarkus.container-image.registry="$(oc get imagestream -o json | jq -r '.items[0].status.publicDockerImageRepository' | awk -F"[/]" '{print $1}')" \
             -Dquarkus.container-image.group="$(oc project --short)" \
-            -Dquarkus.container-image.additional-tags=latest  
+            -Dquarkus.container-image.additional-tags=latest
+        env:
+          APP_VERSION: ${{ steps.app-version.outputs.value }}
 
       - name: Deploy Helm charts
         run: |
