@@ -220,7 +220,8 @@ public class CheckPullRequestContributionRules {
 						"Offending commits: "
 								+ String.join( ", ", mergeCommitShas.stream().map( sha -> "`" + sha + "`" ).toList() )
 								+ ".\n\nPlease [rebase](https://docs.github.com/en/get-started/using-git/about-git-rebase)"
-								+ " your branch on `" + targetBranch + "` and force-push,"
+								+ " your branch on `" + targetBranch + "` and"
+								+ " [force-push](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository#about-force-pushing),"
 								+ " rather than merging the target branch into your pull request branch."
 				);
 			}
