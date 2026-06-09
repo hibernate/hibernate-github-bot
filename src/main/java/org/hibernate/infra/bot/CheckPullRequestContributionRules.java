@@ -221,7 +221,7 @@ public class CheckPullRequestContributionRules {
 								+ String.join( ", ", mergeCommitShas.stream().map( sha -> "`" + sha + "`" ).toList() )
 								+ ".\n\nPlease [rebase](https://docs.github.com/en/get-started/using-git/about-git-rebase)"
 								+ " your branch on `" + targetBranch + "` and"
-								+ " [force-push](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository#about-force-pushing),"
+								+ " [force-push](https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/changing-a-commit-message#amending-older-or-multiple-commit-messages),"
 								+ " rather than merging the target branch into your pull request branch."
 				);
 			}
