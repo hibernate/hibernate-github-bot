@@ -14,6 +14,8 @@ import org.mockito.Answers;
 abstract class AbstractPullRequestTest {
 	final GHCheckRunBuilder titleCheckRunCreateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder titleCheckRunUpdateBuilderMock = mockCheckRunBuilder();
+	final GHCheckRunBuilder mergeCommitsCheckRunCreateBuilderMock = mockCheckRunBuilder();
+	final GHCheckRunBuilder mergeCommitsCheckRunUpdateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder jiraCheckRunCreateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder jiraCheckRunUpdateBuilderMock = mockCheckRunBuilder();
 
@@ -27,6 +29,12 @@ abstract class AbstractPullRequestTest {
 				titleCheckRunCreateBuilderMock, titleCheckRunMock, 42L
 		);
 		mockUpdateCheckRun( repoMock, 42L, titleCheckRunUpdateBuilderMock, titleCheckRunMock );
+
+		GHCheckRun mergeCommitsCheckRunMock = mock( GHCheckRun.class );
+		mockCreateCheckRun( repoMock, "Contribution — Merge commits", headSHA,
+				mergeCommitsCheckRunCreateBuilderMock, mergeCommitsCheckRunMock, 46L
+		);
+		mockUpdateCheckRun( repoMock, 46L, mergeCommitsCheckRunUpdateBuilderMock, mergeCommitsCheckRunMock );
 
 		GHCheckRun jiraCheckRunMock = mock( GHCheckRun.class );
 		mockCreateCheckRun( repoMock, "Contribution — JIRA issues", headSHA,
