@@ -21,7 +21,7 @@ This includes:
 * Basic formatting of the pull request: at least two words in the title, ...
 * Proper referencing of related JIRA tickets: the ticket key must be mentioned in the PR description.
 * Proper formatting of commits: every commit message must start with the key of a JIRA ticket.
-* Etc.
+* No merge commits: pull requests must not contain merge commits; contributors should rebase on the target branch instead.
 
 ### Jira link insertion
 
