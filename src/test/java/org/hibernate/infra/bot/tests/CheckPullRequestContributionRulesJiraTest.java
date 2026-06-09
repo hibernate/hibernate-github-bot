@@ -246,6 +246,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 				.event( GHEvent.PULL_REQUEST, true )
 				.then()
 				.github( mocks -> {
+					verify( mergeCommitsCheckRunUpdateBuilderMock ).withConclusion( GHCheckRun.Conclusion.FAILURE );
 					verify( jiraCheckRunUpdateBuilderMock ).withConclusion( GHCheckRun.Conclusion.FAILURE );
 
 					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
@@ -264,12 +265,14 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 					assertThat( messageCaptor.getValue() )
 							.isEqualTo( """
 									Thanks for your pull request!
-									
+
 									This pull request does not follow the contribution rules. Could you have a look?
-									
+
+									❌ Contribution — Merge commits
+									    ↳ Failed with exception java.lang.IllegalStateException: Simulated failure
 									❌ Contribution — JIRA issues
 									    ↳ Failed with exception java.lang.IllegalStateException: Simulated failure
-									
+
 									› This message was automatically generated.""" );
 					verifyNoMoreInteractions( mocks.ghObjects() );
 				} );

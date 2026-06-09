@@ -26,18 +26,28 @@ public class PullRequestMockHelper {
 		GHCommitPointer baseMock = stub( GHCommitPointer.class );
 		when( pullRequestMock.getBase() ).thenReturn( baseMock );
 		when( baseMock.getRepository() ).thenReturn( repoMock );
-		return new PullRequestMockHelper( repoMock, pullRequestMock );
+		return new PullRequestMockHelper( repoMock, pullRequestMock, baseMock );
 	}
 
 	private final GHRepository repoMock;
 	private final GHPullRequest pullRequestMock;
+	private final GHCommitPointer baseMock;
 
 	private List<GHIssueComment> commentsMocks;
-	private List<GHPullRequestCommitDetail> commitDetailsMocks;
+	private final List<GHPullRequestCommitDetail> commitDetailsMocks;
 
-	private PullRequestMockHelper(GHRepository repoMock, GHPullRequest pullRequestMock) {
+	private PullRequestMockHelper(GHRepository repoMock, GHPullRequest pullRequestMock, GHCommitPointer baseMock) {
 		this.repoMock = repoMock;
 		this.pullRequestMock = pullRequestMock;
+		this.baseMock = baseMock;
+		this.commitDetailsMocks = new ArrayList<>();
+		PagedIterable<GHPullRequestCommitDetail> commitIterableMock = mockPagedIterable( commitDetailsMocks );
+		when( pullRequestMock.listCommits() ).thenReturn( commitIterableMock );
+	}
+
+	public PullRequestMockHelper baseRef(String ref) {
+		when( baseMock.getRef() ).thenReturn( ref );
+		return this;
 	}
 
 	public PullRequestMockHelper commit(String message) throws IOException {
@@ -49,16 +59,14 @@ public class PullRequestMockHelper {
 	}
 
 	public PullRequestMockHelper commit(String message, String sha, List<String> files) throws IOException {
-		if ( commitDetailsMocks == null ) {
-			commitDetailsMocks = new ArrayList<>();
-			PagedIterable<GHPullRequestCommitDetail> commitIterableMock = mockPagedIterable( commitDetailsMocks );
-			when( pullRequestMock.listCommits() ).thenReturn( commitIterableMock );
-		}
 		GHPullRequestCommitDetail commitDetailMock = stub( GHPullRequestCommitDetail.class );
 		commitDetailsMocks.add( commitDetailMock );
 		GHPullRequestCommitDetail.Commit commitMock = stub( GHPullRequestCommitDetail.Commit.class );
 		when( commitDetailMock.getCommit() ).thenReturn( commitMock );
 		when( commitMock.getMessage() ).thenReturn( message );
+		GHPullRequestCommitDetail.CommitPointer parentMock = stub( GHPullRequestCommitDetail.CommitPointer.class );
+		when( commitDetailMock.getParents() )
+				.thenReturn( new GHPullRequestCommitDetail.CommitPointer[] { parentMock } );
 		if ( sha != null ) {
 			when( commitDetailMock.getSha() ).thenReturn( sha );
 		}
@@ -74,6 +82,22 @@ public class PullRequestMockHelper {
 				when( stub.getFileName() ).thenReturn( file );
 				ghFiles.add( stub );
 			}
+		}
+		return this;
+	}
+
+	public PullRequestMockHelper mergeCommit(String message, String sha) {
+		GHPullRequestCommitDetail commitDetailMock = stub( GHPullRequestCommitDetail.class );
+		commitDetailsMocks.add( commitDetailMock );
+		GHPullRequestCommitDetail.Commit commitMock = stub( GHPullRequestCommitDetail.Commit.class );
+		when( commitDetailMock.getCommit() ).thenReturn( commitMock );
+		when( commitMock.getMessage() ).thenReturn( message );
+		GHPullRequestCommitDetail.CommitPointer parentMock1 = stub( GHPullRequestCommitDetail.CommitPointer.class );
+		GHPullRequestCommitDetail.CommitPointer parentMock2 = stub( GHPullRequestCommitDetail.CommitPointer.class );
+		when( commitDetailMock.getParents() )
+				.thenReturn( new GHPullRequestCommitDetail.CommitPointer[] { parentMock1, parentMock2 } );
+		if ( sha != null ) {
+			when( commitDetailMock.getSha() ).thenReturn( sha );
 		}
 		return this;
 	}

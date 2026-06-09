@@ -143,6 +143,7 @@ public class CheckPullRequestContributionRules {
 	private List<PullRequestCheck> createChecks(RepositoryConfig repositoryConfig, String pullRequestTemplate) {
 		List<PullRequestCheck> checks = new ArrayList<>();
 		checks.add( new TitleCheck() );
+		checks.add( new MergeCommitsCheck() );
 
 		if ( repositoryConfig != null && repositoryConfig.jira != null ) {
 			final Integer issueLinksLimit = repositoryConfig.jira.getInsertLinksInPullRequests().isPresent()
@@ -191,6 +192,37 @@ public class CheckPullRequestContributionRules {
 					.result( title != null && SPACE_PATTERN.split( title.trim() ).length >= 2 );
 			output.rule( "The pull request title should not end with an ellipsis (make sure the title is complete)" )
 					.result( title == null || !title.endsWith( "…" ) );
+		}
+	}
+
+	static class MergeCommitsCheck extends PullRequestCheck {
+
+		MergeCommitsCheck() {
+			super( "Contribution — Merge commits" );
+		}
+
+		@Override
+		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
+			List<String> mergeCommitShas = new ArrayList<>();
+			for ( GHPullRequestCommitDetail commitDetail : context.pullRequest.listCommits() ) {
+				if ( commitDetail.getParents().length > 1 ) {
+					mergeCommitShas.add( commitDetail.getSha() );
+				}
+			}
+
+			PullRequestCheckRunRule rule = output.rule( "The pull request should not contain merge commits" );
+			if ( mergeCommitShas.isEmpty() ) {
+				rule.passed();
+			}
+			else {
+				String targetBranch = context.pullRequest.getBase().getRef();
+				rule.failed(
+						"Offending commits: " + mergeCommitShas
+								+ ". Please [rebase](https://docs.github.com/en/get-started/using-git/about-git-rebase)"
+								+ " your branch on `" + targetBranch + "` and force-push,"
+								+ " rather than merging the target branch into your pull request branch."
+				);
+			}
 		}
 	}
 
