@@ -217,8 +217,9 @@ public class CheckPullRequestContributionRules {
 			else {
 				String targetBranch = context.pullRequest.getBase().getRef();
 				rule.failed(
-						"Offending commits: " + mergeCommitShas
-								+ ". Please [rebase](https://docs.github.com/en/get-started/using-git/about-git-rebase)"
+						"Offending commits: "
+								+ String.join( ", ", mergeCommitShas.stream().map( sha -> "`" + sha + "`" ).toList() )
+								+ ".\n\nPlease [rebase](https://docs.github.com/en/get-started/using-git/about-git-rebase)"
 								+ " your branch on `" + targetBranch + "` and force-push,"
 								+ " rather than merging the target branch into your pull request branch."
 				);
