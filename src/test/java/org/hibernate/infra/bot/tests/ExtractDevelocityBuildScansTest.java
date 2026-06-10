@@ -1,6 +1,7 @@
 package org.hibernate.infra.bot.tests;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.gradle.develocity.api.BuildsApi;
+import com.gradle.develocity.model.BuildsQuery;
 
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
 import io.quarkus.test.InjectMock;
@@ -30,6 +32,7 @@ import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.PagedIterable;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @QuarkusTest
@@ -77,7 +80,12 @@ public class ExtractDevelocityBuildScansTest {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
 					verify( repoMock ).createCheckRun( "Develocity Build Scans", HEAD_SHA );
 					verify( repoMock ).updateCheckRun( DEVELOCITY_CHECK_RUN_ID );
-					verify( develocityBuildsApiMock ).getBuilds( any() );
+					var queryCaptor = ArgumentCaptor.forClass( BuildsQuery.BuildsQueryQueryParam.class );
+					verify( develocityBuildsApiMock ).getBuilds( queryCaptor.capture() );
+					String query = queryCaptor.getValue().getQuery();
+					assertThat( query )
+							.contains( "value:\"Git commit id=" + HEAD_SHA + "\"" )
+							.contains( "value:\"CI run=27276276443\"" );
 				} );
 	}
 
@@ -102,7 +110,13 @@ public class ExtractDevelocityBuildScansTest {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
 					verify( repoMock ).createCheckRun( "Develocity Build Scans", HEAD_SHA );
 					verify( repoMock ).updateCheckRun( DEVELOCITY_CHECK_RUN_ID );
-					verify( develocityBuildsApiMock ).getBuilds( any() );
+					var queryCaptor = ArgumentCaptor.forClass( BuildsQuery.BuildsQueryQueryParam.class );
+					verify( develocityBuildsApiMock ).getBuilds( queryCaptor.capture() );
+					String query = queryCaptor.getValue().getQuery();
+					assertThat( query )
+							.contains( "value:\"Git commit id=" + HEAD_SHA + "\"" )
+							.contains( "value:\"CI job=hibernate-orm-pipeline\"" )
+							.contains( "value:\"CI build number=1234\"" );
 				} );
 	}
 
@@ -187,7 +201,11 @@ public class ExtractDevelocityBuildScansTest {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
 					verify( repoMock ).createCheckRun( "Develocity Build Scans", WORKFLOW_HEAD_SHA );
 					verify( repoMock ).updateCheckRun( DEVELOCITY_CHECK_RUN_ID );
-					verify( develocityBuildsApiMock ).getBuilds( any() );
+					var queryCaptor = ArgumentCaptor.forClass( BuildsQuery.BuildsQueryQueryParam.class );
+					verify( develocityBuildsApiMock ).getBuilds( queryCaptor.capture() );
+					String query = queryCaptor.getValue().getQuery();
+					assertThat( query )
+							.contains( "value:\"Git commit id=" + WORKFLOW_HEAD_SHA + "\"" );
 				} );
 	}
 
