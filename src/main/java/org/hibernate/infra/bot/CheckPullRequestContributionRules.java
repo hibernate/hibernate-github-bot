@@ -204,25 +204,48 @@ public class CheckPullRequestContributionRules {
 		@Override
 		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
 			List<String> mergeCommitShas = new ArrayList<>();
+			List<String> fixupSquashCommitShas = new ArrayList<>();
 			for ( GHPullRequestCommitDetail commitDetail : context.pullRequest.listCommits() ) {
 				if ( commitDetail.getParents().length > 1 ) {
 					mergeCommitShas.add( commitDetail.getSha() );
 				}
+				String message = commitDetail.getCommit().getMessage();
+				if ( message.startsWith( "fixup! " ) || message.startsWith( "squash! " ) ) {
+					fixupSquashCommitShas.add( commitDetail.getSha() );
+				}
 			}
 
-			PullRequestCheckRunRule rule = output.rule( "The pull request should not contain merge commits" );
+			PullRequestCheckRunRule mergeCommitRule = output.rule(
+					"The pull request should not contain merge commits" );
 			if ( mergeCommitShas.isEmpty() ) {
-				rule.passed();
+				mergeCommitRule.passed();
 			}
 			else {
 				String targetBranch = context.pullRequest.getBase().getRef();
-				rule.failed(
+				mergeCommitRule.failed(
 						"Offending commits: "
 								+ String.join( ", ", mergeCommitShas.stream().map( sha -> "`" + sha + "`" ).toList() )
 								+ ".\n\nPlease [rebase](https://docs.github.com/en/get-started/using-git/about-git-rebase)"
 								+ " your branch on `" + targetBranch + "` and"
 								+ " [force-push](https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/changing-a-commit-message#amending-older-or-multiple-commit-messages),"
 								+ " rather than merging the target branch into your pull request branch."
+				);
+			}
+
+			PullRequestCheckRunRule fixupSquashRule = output.rule(
+					"The pull request should not contain fixup! or squash! commits" );
+			if ( fixupSquashCommitShas.isEmpty() ) {
+				fixupSquashRule.passed();
+			}
+			else {
+				fixupSquashRule.failed(
+						"Offending commits: "
+								+ String.join( ", ",
+										fixupSquashCommitShas.stream().map( sha -> "`" + sha + "`" ).toList() )
+								+ ".\n\nPlease squash your fixup/squash commits using"
+								+ " [interactive rebase](https://git-scm.com/docs/git-rebase#_interactive_mode)"
+								+ " and [force-push](https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/changing-a-commit-message#amending-older-or-multiple-commit-messages)"
+								+ " before merging."
 				);
 			}
 		}
