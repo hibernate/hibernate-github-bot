@@ -1,0 +1,131 @@
+{
+  "action": "completed",
+  "workflow_run": {
+    "id": 14112498346,
+    "name": "GH Actions CI reporting",
+    "node_id": "WFR_kwLOAA6qDM8AAAADSSuiqg",
+    "head_branch": "main",
+    "head_sha": "ddbf12d7d8ff89a85c579c98c75358d8e9015cc5",
+    "path": ".github/workflows/ci-report.yml",
+    "display_title": "GH Actions CI reporting",
+    "run_number": 2347,
+    "event": "workflow_run",
+    "status": "completed",
+    "conclusion": "success",
+    "workflow_id": 124546728,
+    "check_suite_id": 36324304144,
+    "check_suite_node_id": "CS_kwDOAA6qDM8AAAAIdRjlEA",
+    "url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/runs/14112498346",
+    "html_url": "https://github.com/hibernate/hibernate-orm/actions/runs/14112498346",
+    "pull_requests": [],
+    "created_at": "2025-03-27T17:05:01Z",
+    "updated_at": "2025-03-27T17:19:44Z",
+    "actor": {
+      "login": "mbladel",
+      "id": 25681369
+    },
+    "run_attempt": 2,
+    "referenced_workflows": [],
+    "run_started_at": "2025-03-27T17:17:28Z",
+    "triggering_actor": {
+      "login": "beikov",
+      "id": 358916
+    },
+    "jobs_url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/runs/14112498346/jobs",
+    "logs_url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/runs/14112498346/logs",
+    "check_suite_url": "https://api.github.com/repos/hibernate/hibernate-orm/check-suites/36324304144",
+    "artifacts_url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/runs/14112498346/artifacts",
+    "cancel_url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/runs/14112498346/cancel",
+    "rerun_url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/runs/14112498346/rerun",
+    "workflow_url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/workflows/124546728",
+    "head_commit": {
+      "id": "ddbf12d7d8ff89a85c579c98c75358d8e9015cc5",
+      "tree_id": "53c527f52ec4f6632e7db86b9863b3c6ef709a3d",
+      "message": "HIB-140 Switch to access keys for develocity.commonhaus.dev",
+      "timestamp": "2025-03-27T16:54:54Z",
+      "author": {
+        "name": "Christian Beikov",
+        "email": "christian.beikov@gmail.com"
+      },
+      "committer": {
+        "name": "Christian Beikov",
+        "email": "christian.beikov@gmail.com"
+      }
+    },
+    "repository": {
+      "id": 961036,
+      "node_id": "MDEwOlJlcG9zaXRvcnk5NjEwMzY=",
+      "name": "hibernate-orm",
+      "full_name": "hibernate/hibernate-orm",
+      "private": false,
+      "owner": {
+        "login": "hibernate",
+        "id": 348262
+      },
+      "html_url": "https://github.com/hibernate/hibernate-orm",
+      "description": "Hibernate's core Object/Relational Mapping functionality",
+      "fork": false,
+      "url": "https://api.github.com/repos/hibernate/hibernate-orm"
+    },
+    "head_repository": {
+      "id": 961036,
+      "node_id": "MDEwOlJlcG9zaXRvcnk5NjEwMzY=",
+      "name": "hibernate-orm",
+      "full_name": "hibernate/hibernate-orm",
+      "private": false,
+      "owner": {
+        "login": "hibernate",
+        "id": 348262
+      },
+      "html_url": "https://github.com/hibernate/hibernate-orm",
+      "description": "Hibernate's core Object/Relational Mapping functionality",
+      "fork": false,
+      "url": "https://api.github.com/repos/hibernate/hibernate-orm"
+    }
+  },
+  "workflow": {
+    "id": 124546728,
+    "node_id": "W_kwDOAA6qDM4HbG6o",
+    "name": "GH Actions CI reporting",
+    "path": ".github/workflows/ci-report.yml",
+    "state": "active",
+    "created_at": "2024-10-25T09:53:00.000Z",
+    "updated_at": "2024-10-25T09:53:00.000Z",
+    "url": "https://api.github.com/repos/hibernate/hibernate-orm/actions/workflows/124546728",
+    "html_url": "https://github.com/hibernate/hibernate-orm/blob/main/.github/workflows/ci-report.yml",
+    "badge_url": "https://github.com/hibernate/hibernate-orm/workflows/GH%20Actions%20CI%20reporting/badge.svg"
+  },
+  "repository": {
+    "id": 961036,
+    "node_id": "MDEwOlJlcG9zaXRvcnk5NjEwMzY=",
+    "name": "hibernate-orm",
+    "full_name": "hibernate/hibernate-orm",
+    "private": false,
+    "owner": {
+      "login": "hibernate",
+      "id": 348262,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjM0ODI2Mg==",
+      "avatar_url": "https://avatars.githubusercontent.com/u/348262?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/hibernate",
+      "html_url": "https://github.com/hibernate",
+      "type": "Organization"
+    },
+    "html_url": "https://github.com/hibernate/hibernate-orm",
+    "description": "Hibernate's core Object/Relational Mapping functionality",
+    "fork": false,
+    "url": "https://api.github.com/repos/hibernate/hibernate-orm"
+  },
+  "organization": {
+    "login": "hibernate",
+    "id": 348262
+  },
+  "sender": {
+    "login": "mbladel",
+    "id": 25681369
+  },
+  "installation": {
+    "id": 15390286,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMTUzOTAyODY="
+  }
+}

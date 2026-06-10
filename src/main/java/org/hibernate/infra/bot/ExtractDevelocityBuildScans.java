@@ -28,6 +28,7 @@ import com.gradle.develocity.model.BuildsQuery;
 
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.event.CheckRun;
+import io.quarkiverse.githubapp.event.WorkflowRun;
 import io.quarkus.logging.Log;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -57,6 +58,22 @@ public class ExtractDevelocityBuildScans {
 		}
 		String sha = checkRun.getHeadSha();
 		extractCIBuildScans( repository, repositoryConfig.develocity.buildScan, sha );
+	}
+
+	void workflowRunCompleted(@WorkflowRun.Completed GHEventPayload.WorkflowRun payload,
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) {
+		if ( repositoryConfig == null
+				|| repositoryConfig.develocity == null
+				|| repositoryConfig.develocity.buildScan == null ) {
+			return;
+		}
+		var buildScanConfig = repositoryConfig.develocity.buildScan;
+		if ( !buildScanConfig.addCheck ) {
+			return;
+		}
+		var repository = payload.getRepository();
+		var sha = payload.getWorkflowRun().getHeadSha();
+		extractCIBuildScans( repository, buildScanConfig, sha );
 	}
 
 	void checkRunCompleted(@CheckRun.Completed GHEventPayload.CheckRun payload,
