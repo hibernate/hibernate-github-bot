@@ -196,6 +196,7 @@ public class CheckPullRequestContributionRules {
 	}
 
 	static class MergeCommitsCheck extends PullRequestCheck {
+		private static final int MAX_COMMITS = 100;
 
 		MergeCommitsCheck() {
 			super( "Contribution — Merge commits" );
@@ -203,6 +204,17 @@ public class CheckPullRequestContributionRules {
 
 		@Override
 		public void perform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
+			String mergeCommitRuleName = "The pull request should not contain merge commits";
+			String fixupSquashRuleName = "The pull request should not contain fixup! or squash! commits";
+
+			if ( context.pullRequest.getCommits() > MAX_COMMITS ) {
+				String tooManyCommits = "Too many commits (%d) to process; the pull request is probably targeting the wrong branch."
+						.formatted( context.pullRequest.getCommits() );
+				output.rule( mergeCommitRuleName ).failed( tooManyCommits );
+				output.rule( fixupSquashRuleName ).failed( tooManyCommits );
+				return;
+			}
+
 			List<String> mergeCommitShas = new ArrayList<>();
 			List<String> fixupSquashCommitShas = new ArrayList<>();
 			for ( GHPullRequestCommitDetail commitDetail : context.pullRequest.listCommits() ) {
@@ -215,8 +227,7 @@ public class CheckPullRequestContributionRules {
 				}
 			}
 
-			PullRequestCheckRunRule mergeCommitRule = output.rule(
-					"The pull request should not contain merge commits" );
+			PullRequestCheckRunRule mergeCommitRule = output.rule( mergeCommitRuleName );
 			if ( mergeCommitShas.isEmpty() ) {
 				mergeCommitRule.passed();
 			}
@@ -232,8 +243,7 @@ public class CheckPullRequestContributionRules {
 				);
 			}
 
-			PullRequestCheckRunRule fixupSquashRule = output.rule(
-					"The pull request should not contain fixup! or squash! commits" );
+			PullRequestCheckRunRule fixupSquashRule = output.rule( fixupSquashRuleName );
 			if ( fixupSquashCommitShas.isEmpty() ) {
 				fixupSquashRule.passed();
 			}
@@ -270,6 +280,16 @@ public class CheckPullRequestContributionRules {
 
 		@Override
 		public void doPerform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) throws IOException {
+			String commitRuleName = "All commit messages should start with a JIRA issue key matching pattern `"
+					+ issueKeyPattern + "`";
+
+			if ( context.pullRequest.getCommits() > MergeCommitsCheck.MAX_COMMITS ) {
+				output.rule( commitRuleName )
+						.failed( "Too many commits (%d) to process; the pull request is probably targeting the wrong branch."
+								.formatted( context.pullRequest.getCommits() ) );
+				return;
+			}
+
 			String title = context.pullRequest.getTitle();
 			String body = context.pullRequest.getBody();
 
@@ -287,9 +307,7 @@ public class CheckPullRequestContributionRules {
 				}
 			}
 
-			PullRequestCheckRunRule commitRule =
-					output.rule( "All commit messages should start with a JIRA issue key matching pattern `"
-							+ issueKeyPattern + "`" );
+			PullRequestCheckRunRule commitRule = output.rule( commitRuleName );
 			if ( commitsWithMessageNotStartingWithIssueKey.isEmpty() ) {
 				commitRule.passed();
 			}
