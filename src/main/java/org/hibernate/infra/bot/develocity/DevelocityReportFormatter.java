@@ -46,9 +46,9 @@ public class DevelocityReportFormatter {
 		List<FailingTestRow> rows = new ArrayList<>();
 		for ( DevelocityFailingTest test : failingTests ) {
 			String whereColumn = test.failingScans().stream()
-					.map( scan -> extractCompactTagSummary( scan, config ) )
+					.map( scan -> formatWhereEntry( scan, test.name(), config ) )
 					.distinct()
-					.collect( Collectors.joining( "; " ) );
+					.collect( Collectors.joining( " " ) );
 			rows.add( new FailingTestRow( test, whereColumn ) );
 		}
 		return Templates.failingTests( rows, showHistory )
@@ -56,6 +56,15 @@ public class DevelocityReportFormatter {
 	}
 
 	public record FailingTestRow(DevelocityFailingTest test, String where) {
+	}
+
+	private String formatWhereEntry(DevelocityCIBuildScan buildScan, String testName,
+			RepositoryConfig.Develocity.BuildScan config) {
+		String label = extractCompactTagSummary( buildScan, config );
+		URI testUri = UriBuilder.fromUri( buildScan.testsUri() )
+				.queryParam( "container", testName )
+				.build();
+		return "[%s](%s)".formatted( label, testUri );
 	}
 
 	private String extractCompactTagSummary(DevelocityCIBuildScan buildScan,

@@ -436,14 +436,7 @@ public class ExtractDevelocityBuildScans {
 			if ( outcome != null && outcome.getOverall() != null
 					&& (outcome.getOverall() == TestOutcome.FAILED
 							|| outcome.getOverall() == TestOutcome.FLAKY) ) {
-				if ( container.getChildren() == null || container.getChildren().isEmpty() ) {
-					// Leaf container (test class with no nested containers): record it
-					result.computeIfAbsent( container.getName(), k -> new ArrayList<>() ).add( scan );
-				}
-				else {
-					// Has children: recurse to find the actual failing leaf containers
-					collectFailingContainerNames( container.getChildren(), scan, result );
-				}
+				result.computeIfAbsent( container.getName(), k -> new ArrayList<>() ).add( scan );
 			}
 		}
 	}
@@ -498,7 +491,7 @@ public class ExtractDevelocityBuildScans {
 		if ( failure == null ) {
 			conclusion = GHCheckRun.Conclusion.NEUTRAL;
 			title = "Found %s build scan%s".formatted( buildScans.size(), buildScans.size() != 1 ? "s" : "" );
-			text = formattedBuildScanList + formattedFailingTests + footer;
+			text = formattedFailingTests + formattedBuildScanList + footer;
 		}
 		else {
 			conclusion = GHCheckRun.Conclusion.FAILURE;
@@ -509,7 +502,7 @@ public class ExtractDevelocityBuildScans {
 			catch (RuntimeException e) {
 				failure.addSuppressed( e );
 			}
-			text = formattedBuildScanList + formattedFailingTests + "\n\n```\n" + ExceptionUtils.getStackTrace( failure )
+			text = formattedFailingTests + formattedBuildScanList + "\n\n```\n" + ExceptionUtils.getStackTrace( failure )
 					+ "\n```" + footer;
 		}
 

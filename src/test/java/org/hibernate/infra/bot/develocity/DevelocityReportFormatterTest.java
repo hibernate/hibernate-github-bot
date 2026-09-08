@@ -81,6 +81,8 @@ class DevelocityReportFormatterTest {
 		);
 		assertThat( formatter.summary( buildScans, new RepositoryConfig.Develocity.BuildScan() ) )
 				.isEqualTo( """
+						## Build Scans
+
 						| Job/Workflow | Tags | Goals/Tasks | Results |
 						| -- | -- | -- | :-: |
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
@@ -210,6 +212,8 @@ class DevelocityReportFormatterTest {
 				)
 		) ) )
 				.isEqualTo( """
+						## Build Scans
+
 						| Job/Workflow | OS | Java | Backend | DB | Goals/Tasks | Results |
 						| -- | -- | -- | -- | -- | -- | :-: |
 						|[GitHub Actions Build](https://ci.hibernate.org/job/hibernate-search/job/PR-4125/4/ "Build")\
@@ -317,15 +321,19 @@ class DevelocityReportFormatterTest {
 				),
 				new RepositoryConfig.Develocity.TestSummary( "tag:CI" )
 		);
-		assertThat( formatter.failingTests( failingTests, config ) )
-				.contains( "### Failing Tests" )
+		var result = formatter.failingTests( failingTests, config );
+		assertThat( result )
+				.contains( "## Failing Tests" )
 				.contains( "Recent history" )
-				.contains( "`SomeTest`" )
-				.contains( "`FlakyTest`" )
+				.contains( "|`SomeTest`|" )
+				.contains( "|`FlakyTest`|" )
 				.contains( "Only this run" )
 				.contains( ":warning: Failed 18/50 times" )
-				.contains( "`17`" )
-				.contains( "`h2`" );
+				.contains( ":mag:" )
+				.contains( "[`17` `h2`](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests?container=" );
+		assertThat( result )
+				.doesNotContain( "[`SomeTest`](" )
+				.doesNotContain( "[`FlakyTest`](" );
 	}
 
 	@Test
@@ -352,12 +360,14 @@ class DevelocityReportFormatterTest {
 								Optional.of( "$0" ) )
 				)
 		);
-		assertThat( formatter.failingTests( failingTests, config ) )
-				.contains( "### Failing Tests" )
-				.contains( "`SomeTest`" )
-				.contains( "`h2`" )
+		var result = formatter.failingTests( failingTests, config );
+		assertThat( result )
+				.contains( "## Failing Tests" )
+				.contains( "|`SomeTest`|" )
+				.contains( "[`h2`](https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests?container=" )
 				.doesNotContain( "Recent history" )
-				.doesNotContain( "n/a" );
+				.doesNotContain( "n/a" )
+				.doesNotContain( ":mag:" );
 	}
 
 	@Test

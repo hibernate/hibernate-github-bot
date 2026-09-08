@@ -1,6 +1,8 @@
 {#if buildScans == null || buildScans.empty}
 No build scan found for this CI run.
 {#else}
+## Build Scans
+
 | Job/Workflow {!
 !}{#for tagColumn in tagColumns}{!
 !}| {#if tagColumn.name}{tagColumn.name}{#else}{#if tagColumns.size == 1}Tags{#else}Other tags{/if}{/if} {!
