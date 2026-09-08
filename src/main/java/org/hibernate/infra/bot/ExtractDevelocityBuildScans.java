@@ -361,9 +361,9 @@ public class ExtractDevelocityBuildScans {
 			return List.of();
 		}
 
-		// Step 2: Get cross-build history for each failing test
-		String prTag = findPrTag( buildScans );
-		var testSummaryConfig = config.testSummary;
+		// Step 2: Get cross-build history for each failing test (only if historyQuery is configured)
+		boolean historyEnabled = config.isHistoryEnabled();
+		String prTag = historyEnabled ? findPrTag( buildScans ) : null;
 
 		List<DevelocityFailingTest> failingTests = new ArrayList<>();
 		int historyLookups = 0;
@@ -376,10 +376,10 @@ public class ExtractDevelocityBuildScans {
 			boolean historyChecked = false;
 			boolean failsOutsideThisRun = false;
 
-			if ( historyLookups < testSummaryConfig.maxTestHistoryLookups ) {
+			if ( historyEnabled && historyLookups < config.testSummary.maxTestHistoryLookups ) {
 				try {
-					String historyQuery = testSummaryConfig.historyQuery
-							+ " and buildStartTime>=-" + testSummaryConfig.historyDays + "d";
+					String historyQuery = config.testSummary.historyQuery
+							+ " and buildStartTime>=-" + config.testSummary.historyDays + "d";
 					if ( prTag != null ) {
 						historyQuery += " and -tag:" + prTag;
 					}

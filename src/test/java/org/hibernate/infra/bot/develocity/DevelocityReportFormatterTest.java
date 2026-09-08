@@ -314,16 +314,50 @@ class DevelocityReportFormatterTest {
 								"DB",
 								Patterns.compile( "h2|postgres" ),
 								Optional.of( "$0" ) )
-				)
+				),
+				new RepositoryConfig.Develocity.TestSummary( "tag:CI" )
 		);
 		assertThat( formatter.failingTests( failingTests, config ) )
 				.contains( "### Failing Tests" )
+				.contains( "Recent history" )
 				.contains( "`SomeTest`" )
 				.contains( "`FlakyTest`" )
 				.contains( "Only this run" )
 				.contains( ":warning: Failed 18/50 times" )
 				.contains( "`17`" )
 				.contains( "`h2`" );
+	}
+
+	@Test
+	void failingTests_noHistory() {
+		var failingScan = buildScanStub( "Jenkins", "hibernate-search/PR-4125", "Default build",
+				List.of( "Linux", "h2", "jdk-17" ),
+				List.of( "clean verify" ),
+				DevelocityCIBuildScan.Status.FAILURE,
+				DevelocityCIBuildScan.Status.FAILURE );
+
+		var failingTests = List.of(
+				new DevelocityFailingTest(
+						"org.hibernate.search.SomeTest",
+						List.of( failingScan ),
+						false, null,
+						false )
+		);
+		var config = new RepositoryConfig.Develocity.BuildScan(
+				true,
+				List.of(
+						new RepositoryConfig.Develocity.ColumnRule(
+								"DB",
+								Patterns.compile( "h2|postgres" ),
+								Optional.of( "$0" ) )
+				)
+		);
+		assertThat( formatter.failingTests( failingTests, config ) )
+				.contains( "### Failing Tests" )
+				.contains( "`SomeTest`" )
+				.contains( "`h2`" )
+				.doesNotContain( "Recent history" )
+				.doesNotContain( "n/a" );
 	}
 
 	@Test

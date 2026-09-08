@@ -42,6 +42,7 @@ public class DevelocityReportFormatter {
 		if ( failingTests == null || failingTests.isEmpty() ) {
 			return "";
 		}
+		boolean showHistory = config.isHistoryEnabled();
 		List<FailingTestRow> rows = new ArrayList<>();
 		for ( DevelocityFailingTest test : failingTests ) {
 			String whereColumn = test.failingScans().stream()
@@ -50,7 +51,7 @@ public class DevelocityReportFormatter {
 					.collect( Collectors.joining( "; " ) );
 			rows.add( new FailingTestRow( test, whereColumn ) );
 		}
-		return Templates.failingTests( rows )
+		return Templates.failingTests( rows, showHistory )
 				.render();
 	}
 
@@ -140,7 +141,7 @@ public class DevelocityReportFormatter {
 		public static native TemplateInstance summary(List<DevelocityCIBuildScan> buildScans,
 				Collection<TagColumn> tagColumns);
 
-		public static native TemplateInstance failingTests(List<FailingTestRow> rows);
+		public static native TemplateInstance failingTests(List<FailingTestRow> rows, boolean showHistory);
 
 		public static native TemplateInstance footer(String query, boolean debug);
 	}

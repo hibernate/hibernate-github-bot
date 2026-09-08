@@ -134,7 +134,7 @@ public class RepositoryConfig {
 
 			public List<ColumnRule> tags = new ArrayList<>();
 
-			public TestSummary testSummary;
+			public TestSummary testSummary = new TestSummary();
 
 			public BuildScan() {
 			}
@@ -151,12 +151,17 @@ public class RepositoryConfig {
 			}
 
 			public boolean isTestSummaryEnabled() {
+				return testSummary != null && testSummary.enabled;
+			}
+
+			public boolean isHistoryEnabled() {
 				return testSummary != null && testSummary.historyQuery != null
 						&& !testSummary.historyQuery.isBlank();
 			}
 		}
 
 		public static class TestSummary {
+			public boolean enabled = true;
 			public String historyQuery;
 			public int historyDays = 7;
 			public int maxTestHistoryLookups = 25;
