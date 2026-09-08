@@ -134,12 +134,44 @@ public class RepositoryConfig {
 
 			public List<ColumnRule> tags = new ArrayList<>();
 
+			public TestSummary testSummary;
+
 			public BuildScan() {
 			}
 
 			public BuildScan(boolean addCheck, List<ColumnRule> tags) {
 				this.addCheck = addCheck;
 				this.tags = tags;
+			}
+
+			public BuildScan(boolean addCheck, List<ColumnRule> tags, TestSummary testSummary) {
+				this.addCheck = addCheck;
+				this.tags = tags;
+				this.testSummary = testSummary;
+			}
+
+			public boolean isTestSummaryEnabled() {
+				return testSummary != null && testSummary.historyQuery != null
+						&& !testSummary.historyQuery.isBlank();
+			}
+		}
+
+		public static class TestSummary {
+			public String historyQuery;
+			public int historyDays = 7;
+			public int maxTestHistoryLookups = 25;
+
+			public TestSummary() {
+			}
+
+			public TestSummary(String historyQuery) {
+				this.historyQuery = historyQuery;
+			}
+
+			public TestSummary(String historyQuery, int historyDays, int maxTestHistoryLookups) {
+				this.historyQuery = historyQuery;
+				this.historyDays = historyDays;
+				this.maxTestHistoryLookups = maxTestHistoryLookups;
 			}
 		}
 

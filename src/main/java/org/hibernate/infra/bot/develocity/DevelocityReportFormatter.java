@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -20,6 +21,8 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 
+import com.gradle.develocity.model.TestOutcomeDistribution;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateExtension;
@@ -32,6 +35,47 @@ public class DevelocityReportFormatter {
 		Collection<TagColumn> tagColumns = extractTagColumns( buildScans, config );
 		return Templates.summary( buildScans, tagColumns )
 				.render();
+	}
+
+	public String failingTests(List<DevelocityFailingTest> failingTests,
+			RepositoryConfig.Develocity.BuildScan config) {
+		if ( failingTests == null || failingTests.isEmpty() ) {
+			return "";
+		}
+		List<FailingTestRow> rows = new ArrayList<>();
+		for ( DevelocityFailingTest test : failingTests ) {
+			String whereColumn = test.failingScans().stream()
+					.map( scan -> extractCompactTagSummary( scan, config ) )
+					.distinct()
+					.collect( Collectors.joining( "; " ) );
+			rows.add( new FailingTestRow( test, whereColumn ) );
+		}
+		return Templates.failingTests( rows )
+				.render();
+	}
+
+	public record FailingTestRow(DevelocityFailingTest test, String where) {
+	}
+
+	private String extractCompactTagSummary(DevelocityCIBuildScan buildScan,
+			RepositoryConfig.Develocity.BuildScan config) {
+		List<String> parts = new ArrayList<>();
+		for ( RepositoryConfig.Develocity.ColumnRule rule : config.tags ) {
+			for ( String tag : buildScan.tags() ) {
+				var matcher = rule.getPattern().matcher( tag );
+				if ( matcher.matches() ) {
+					String value = tag;
+					if ( rule.replacement.isPresent() ) {
+						value = matcher.replaceAll( rule.replacement.get() );
+					}
+					if ( !value.isBlank() ) {
+						parts.add( "`" + value + "`" );
+					}
+					break;
+				}
+			}
+		}
+		return parts.isEmpty() ? "—" : String.join( " ", parts );
 	}
 
 	public String footer(String query, boolean debug) {
@@ -96,6 +140,8 @@ public class DevelocityReportFormatter {
 		public static native TemplateInstance summary(List<DevelocityCIBuildScan> buildScans,
 				Collection<TagColumn> tagColumns);
 
+		public static native TemplateInstance failingTests(List<FailingTestRow> rows);
+
 		public static native TemplateInstance footer(String query, boolean debug);
 	}
 
@@ -145,6 +191,32 @@ public class DevelocityReportFormatter {
 				case SUCCESS -> ":white_check_mark:";
 				case FAILURE -> ":x:";
 			};
+		}
+
+		static URI testHistoryUri(DevelocityFailingTest test) {
+			var config = Arc.container().instance( DeploymentConfig.class ).get();
+			return UriBuilder.fromUri( config.develocity().uri() )
+					.path( "scans/tests" )
+					.queryParam( "search.relativeStartTime", "P7D" )
+					.queryParam( "tests.container", test.name() )
+					.build();
+		}
+
+		static String historyLabel(DevelocityFailingTest test) {
+			if ( !test.historyChecked() ) {
+				return "n/a";
+			}
+			TestOutcomeDistribution dist = test.historyDistribution();
+			if ( dist != null && test.failsOutsideThisRun() ) {
+				int failed = dist.getFailed() != null ? dist.getFailed() : 0;
+				int flaky = dist.getFlaky() != null ? dist.getFlaky() : 0;
+				int total = dist.getTotal() != null ? dist.getTotal() : 0;
+				int failedOrFlaky = failed + flaky;
+				if ( failedOrFlaky > 0 ) {
+					return ":warning: Failed " + failedOrFlaky + "/" + total + " times";
+				}
+			}
+			return "Only this run";
 		}
 	}
 

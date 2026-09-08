@@ -3,10 +3,14 @@ package org.hibernate.infra.bot;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
@@ -14,17 +18,29 @@ import jakarta.inject.Inject;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.develocity.DevelocityCIBuildScan;
+import org.hibernate.infra.bot.develocity.DevelocityFailingTest;
 import org.hibernate.infra.bot.develocity.DevelocityReportFormatter;
 import org.hibernate.infra.bot.util.GitHubActionsRunId;
 import org.hibernate.infra.bot.util.JenkinsRunId;
 
 import com.gradle.develocity.api.BuildsApi;
+import com.gradle.develocity.api.TestsApi;
 import com.gradle.develocity.model.Build;
 import com.gradle.develocity.model.BuildAttributesEnvironment;
 import com.gradle.develocity.model.BuildAttributesLink;
 import com.gradle.develocity.model.BuildAttributesValue;
 import com.gradle.develocity.model.BuildModelName;
+import com.gradle.develocity.model.BuildTestOrContainer;
+import com.gradle.develocity.model.BuildTestOrContainerOutcome;
+import com.gradle.develocity.model.BuildTestWorkUnit;
+import com.gradle.develocity.model.BuildTestsQuery;
+import com.gradle.develocity.model.BuildTestsResponse;
 import com.gradle.develocity.model.BuildsQuery;
+import com.gradle.develocity.model.TestContainersQuery;
+import com.gradle.develocity.model.TestIncludeFields;
+import com.gradle.develocity.model.TestOrContainer;
+import com.gradle.develocity.model.TestOutcome;
+import com.gradle.develocity.model.TestOutcomeDistribution;
 
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.event.CheckRun;
@@ -47,8 +63,13 @@ public class ExtractDevelocityBuildScans {
 	@RestClient
 	BuildsApi develocityBuildsApi;
 
+	@RestClient
+	TestsApi develocityTestsApi;
+
 	@Inject
 	DevelocityReportFormatter reportFormatter;
+
+	private static final Pattern PR_TAG_PATTERN = Pattern.compile( "PR-\\d+" );
 
 	void checkRunRerequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) {
@@ -157,7 +178,24 @@ public class ExtractDevelocityBuildScans {
 			if ( failure != null ) {
 				Log.errorf( failure, "Failed to extract all build scans from commit %s" + sha );
 			}
-			updateDevelocityCheck( repository, config, checkId, query, buildScans, failure );
+
+			List<DevelocityFailingTest> failingTests = List.of();
+			if ( config.isTestSummaryEnabled() ) {
+				try {
+					failingTests = extractFailingTests( buildScans, config );
+				}
+				catch (RuntimeException e) {
+					if ( failure == null ) {
+						failure = e;
+					}
+					else {
+						failure.addSuppressed( e );
+					}
+					Log.errorf( e, "Failed to extract failing tests from commit %s", sha );
+				}
+			}
+
+			updateDevelocityCheck( repository, config, checkId, query, buildScans, failingTests, failure );
 		}
 		catch (IOException | RuntimeException e) {
 			Log.errorf( e, "Failed to report build scans from commit %s" + sha );
@@ -287,6 +325,145 @@ public class ExtractDevelocityBuildScans {
 		);
 	}
 
+	private List<DevelocityFailingTest> extractFailingTests(List<DevelocityCIBuildScan> buildScans,
+			RepositoryConfig.Develocity.BuildScan config) {
+		List<DevelocityCIBuildScan> failingScans = buildScans.stream()
+				.filter( s -> s.testStatus() == DevelocityCIBuildScan.Status.FAILURE )
+				.toList();
+		if ( failingScans.isEmpty() ) {
+			return List.of();
+		}
+
+		Set<String> currentScanIds = buildScans.stream()
+				.map( ExtractDevelocityBuildScans::extractScanId )
+				.collect( Collectors.toSet() );
+
+		// Step 1: Get failing test containers per build scan via the per-build tests endpoint.
+		Map<String, List<DevelocityCIBuildScan>> testToFailingScans = new LinkedHashMap<>();
+		for ( DevelocityCIBuildScan scan : failingScans ) {
+			String scanId = extractScanId( scan );
+			try {
+				BuildTestsResponse response = develocityTestsApi.getBuildTests( scanId,
+						new BuildTestsQuery.BuildTestsQueryQueryParam()
+								.testOutcomes( List.of( TestOutcome.FAILED, TestOutcome.FLAKY ) ) );
+				if ( response != null && response.getWorkUnits() != null ) {
+					for ( BuildTestWorkUnit workUnit : response.getWorkUnits() ) {
+						collectFailingContainerNames( workUnit.getTests(), scan, testToFailingScans );
+					}
+				}
+			}
+			catch (RuntimeException e) {
+				Log.warnf( e, "Failed to fetch failing tests for build scan %s", scanId );
+			}
+		}
+
+		if ( testToFailingScans.isEmpty() ) {
+			return List.of();
+		}
+
+		// Step 2: Get cross-build history for each failing test
+		String prTag = findPrTag( buildScans );
+		var testSummaryConfig = config.testSummary;
+
+		List<DevelocityFailingTest> failingTests = new ArrayList<>();
+		int historyLookups = 0;
+		for ( var entry : testToFailingScans.entrySet() ) {
+			String testName = entry.getKey();
+			List<DevelocityCIBuildScan> scans = entry.getValue();
+			scans.sort( DevelocityCIBuildScan.COMPARATOR );
+
+			TestOutcomeDistribution historyDistribution = null;
+			boolean historyChecked = false;
+			boolean failsOutsideThisRun = false;
+
+			if ( historyLookups < testSummaryConfig.maxTestHistoryLookups ) {
+				try {
+					String historyQuery = testSummaryConfig.historyQuery
+							+ " and buildStartTime>=-" + testSummaryConfig.historyDays + "d";
+					if ( prTag != null ) {
+						historyQuery += " and -tag:" + prTag;
+					}
+					var historyResponse = develocityTestsApi.getTestContainers(
+							new TestContainersQuery.TestContainersQueryQueryParam()
+									.container( testName )
+									.testOutcomes( List.of( TestOutcome.FAILED, TestOutcome.FLAKY ) )
+									.query( historyQuery )
+									.include( List.of( TestIncludeFields.BUILD_SCAN_IDS ) ) );
+
+					historyChecked = true;
+					if ( historyResponse != null && historyResponse.getContent() != null ) {
+						for ( TestOrContainer historyContainer : historyResponse.getContent() ) {
+							if ( testName.equals( historyContainer.getName() ) ) {
+								historyDistribution = historyContainer.getOutcomeDistribution();
+								if ( historyContainer.getBuildScanIdsByOutcome() != null ) {
+									Set<String> allHistoricalIds = new HashSet<>();
+									if ( historyContainer.getBuildScanIdsByOutcome().getFailed() != null ) {
+										allHistoricalIds.addAll(
+												historyContainer.getBuildScanIdsByOutcome().getFailed() );
+									}
+									if ( historyContainer.getBuildScanIdsByOutcome().getFlaky() != null ) {
+										allHistoricalIds.addAll(
+												historyContainer.getBuildScanIdsByOutcome().getFlaky() );
+									}
+									failsOutsideThisRun = allHistoricalIds.stream()
+											.anyMatch( id -> !currentScanIds.contains( id ) );
+								}
+								break;
+							}
+						}
+					}
+					historyLookups++;
+				}
+				catch (RuntimeException e) {
+					Log.warnf( e, "Failed to fetch test history for %s", testName );
+					historyLookups++;
+				}
+			}
+
+			failingTests.add( new DevelocityFailingTest( testName, scans,
+					historyChecked, historyDistribution, failsOutsideThisRun ) );
+		}
+		return failingTests;
+	}
+
+	private void collectFailingContainerNames(List<BuildTestOrContainer> containers,
+			DevelocityCIBuildScan scan, Map<String, List<DevelocityCIBuildScan>> result) {
+		if ( containers == null ) {
+			return;
+		}
+		for ( BuildTestOrContainer container : containers ) {
+			BuildTestOrContainerOutcome outcome = container.getOutcome();
+			if ( outcome != null && outcome.getOverall() != null
+					&& (outcome.getOverall() == TestOutcome.FAILED
+							|| outcome.getOverall() == TestOutcome.FLAKY) ) {
+				if ( container.getChildren() == null || container.getChildren().isEmpty() ) {
+					// Leaf container (test class with no nested containers): record it
+					result.computeIfAbsent( container.getName(), k -> new ArrayList<>() ).add( scan );
+				}
+				else {
+					// Has children: recurse to find the actual failing leaf containers
+					collectFailingContainerNames( container.getChildren(), scan, result );
+				}
+			}
+		}
+	}
+
+	private static String extractScanId(DevelocityCIBuildScan scan) {
+		var path = scan.buildScanUri().getPath();
+		return path.substring( path.lastIndexOf( '/' ) + 1 );
+	}
+
+	private String findPrTag(List<DevelocityCIBuildScan> buildScans) {
+		for ( DevelocityCIBuildScan scan : buildScans ) {
+			for ( String tag : scan.tags() ) {
+				if ( PR_TAG_PATTERN.matcher( tag ).matches() ) {
+					return tag;
+				}
+			}
+		}
+		return null;
+	}
+
 	private long createDevelocityCheck(GHRepository repository, String sha) throws IOException {
 		return repository.createCheckRun( DEVELOCITY_CHECK_RUN_NAME, sha )
 				.withStatus( GHCheckRun.Status.IN_PROGRESS )
@@ -295,12 +472,15 @@ public class ExtractDevelocityBuildScans {
 	}
 
 	private void updateDevelocityCheck(GHRepository repository, RepositoryConfig.Develocity.BuildScan config,
-			long checkId, String query, List<DevelocityCIBuildScan> buildScans, Throwable failure)
+			long checkId, String query, List<DevelocityCIBuildScan> buildScans,
+			List<DevelocityFailingTest> failingTests, Throwable failure)
 			throws IOException {
 		String formattedBuildScanList = "";
+		String formattedFailingTests = "";
 		String footer = "";
 		try {
 			formattedBuildScanList = reportFormatter.summary( buildScans, config );
+			formattedFailingTests = reportFormatter.failingTests( failingTests, config );
 			footer = reportFormatter.footer( query, false );
 		}
 		catch (RuntimeException e) {
@@ -318,7 +498,7 @@ public class ExtractDevelocityBuildScans {
 		if ( failure == null ) {
 			conclusion = GHCheckRun.Conclusion.NEUTRAL;
 			title = "Found %s build scan%s".formatted( buildScans.size(), buildScans.size() != 1 ? "s" : "" );
-			text = formattedBuildScanList + footer;
+			text = formattedBuildScanList + formattedFailingTests + footer;
 		}
 		else {
 			conclusion = GHCheckRun.Conclusion.FAILURE;
@@ -329,7 +509,8 @@ public class ExtractDevelocityBuildScans {
 			catch (RuntimeException e) {
 				failure.addSuppressed( e );
 			}
-			text = formattedBuildScanList + "\n\n```\n" + ExceptionUtils.getStackTrace( failure ) + "\n```" + footer;
+			text = formattedBuildScanList + formattedFailingTests + "\n\n```\n" + ExceptionUtils.getStackTrace( failure )
+					+ "\n```" + footer;
 		}
 
 		if ( deploymentConfig.isDryRun() ) {

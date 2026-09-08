@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.gradle.develocity.api.BuildsApi;
+import com.gradle.develocity.api.TestsApi;
 import com.gradle.develocity.model.BuildsQuery;
 
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
@@ -54,6 +55,10 @@ public class ExtractDevelocityBuildScansTest {
 	@InjectMock
 	@RestClient
 	BuildsApi develocityBuildsApiMock;
+
+	@InjectMock
+	@RestClient
+	TestsApi develocityTestsApiMock;
 
 	@BeforeEach
 	void setUp() {

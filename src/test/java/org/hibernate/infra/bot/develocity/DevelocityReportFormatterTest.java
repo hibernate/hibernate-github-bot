@@ -23,6 +23,8 @@ import jakarta.inject.Inject;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.util.Patterns;
 
+import com.gradle.develocity.model.TestOutcomeDistribution;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -265,6 +267,63 @@ class DevelocityReportFormatterTest {
 				URI.create( "https://develocity.commonhaus.dev/s/45fv2rr67ofuy/failures" ),
 				URI.create( "https://develocity.commonhaus.dev/s/45fv2rr67ofuy/tests" ),
 				URI.create( "https://develocity.commonhaus.dev/s/45fv2rr67ofuy/console-log" ) );
+	}
+
+	@Test
+	void failingTests_empty() {
+		assertThat( formatter.failingTests( List.of(), new RepositoryConfig.Develocity.BuildScan() ) )
+				.isEqualTo( "" );
+	}
+
+	@Test
+	void failingTests_simple() {
+		var failingScan = buildScanStub( "Jenkins", "hibernate-search/PR-4125", "Default build",
+				List.of( "Linux", "elasticsearch", "elasticsearch-8.13", "h2", "hibernate-search", "jdk-17", "lucene" ),
+				List.of( "clean verify" ),
+				DevelocityCIBuildScan.Status.FAILURE,
+				DevelocityCIBuildScan.Status.FAILURE );
+
+		var historyDist = new TestOutcomeDistribution();
+		historyDist.setTotal( 50 );
+		historyDist.setFailed( 15 );
+		historyDist.setFlaky( 3 );
+		historyDist.setPassed( 32 );
+		historyDist.setSkipped( 0 );
+		historyDist.setNotSelected( 0 );
+
+		var failingTests = List.of(
+				new DevelocityFailingTest(
+						"org.hibernate.search.SomeTest",
+						List.of( failingScan ),
+						true, null,
+						false ),
+				new DevelocityFailingTest(
+						"org.hibernate.search.FlakyTest",
+						List.of( failingScan ),
+						true, historyDist,
+						true )
+		);
+		var config = new RepositoryConfig.Develocity.BuildScan(
+				true,
+				List.of(
+						new RepositoryConfig.Develocity.ColumnRule(
+								"Java",
+								Patterns.compile( "jdk-(.*)" ),
+								Optional.of( "$1" ) ),
+						new RepositoryConfig.Develocity.ColumnRule(
+								"DB",
+								Patterns.compile( "h2|postgres" ),
+								Optional.of( "$0" ) )
+				)
+		);
+		assertThat( formatter.failingTests( failingTests, config ) )
+				.contains( "### Failing Tests" )
+				.contains( "`SomeTest`" )
+				.contains( "`FlakyTest`" )
+				.contains( "Only this run" )
+				.contains( ":warning: Failed 18/50 times" )
+				.contains( "`17`" )
+				.contains( "`h2`" );
 	}
 
 	@Test
