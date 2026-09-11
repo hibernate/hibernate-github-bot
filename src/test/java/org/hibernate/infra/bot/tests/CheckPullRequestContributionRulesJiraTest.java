@@ -2,13 +2,13 @@ package org.hibernate.infra.bot.tests;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hibernate.infra.bot.tests.PullRequestMockHelper.mockLenientPagedIterable;
 import static org.hibernate.infra.bot.tests.PullRequestMockHelper.mockPagedIterable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.ignoreStubs;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -247,7 +247,7 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 					when( baseMock.getRepository() ).thenReturn( repoMock );
 					PagedIterable<GHIssueComment> commentIterableMock = mockPagedIterable( Collections.emptyList() );
 					when( pullRequestMock.listComments() ).thenReturn( commentIterableMock );
-					PagedIterable<GHPullRequestFileDetail> fileIterableMock = mockPagedIterable( Collections.emptyList() );
+					PagedIterable<GHPullRequestFileDetail> fileIterableMock = mockLenientPagedIterable( Collections.emptyList() );
 					lenient().when( pullRequestMock.listFiles() ).thenReturn( fileIterableMock );
 
 					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );

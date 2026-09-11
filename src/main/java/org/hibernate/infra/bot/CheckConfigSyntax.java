@@ -6,6 +6,7 @@ import java.util.Date;
 
 import jakarta.inject.Inject;
 
+import org.hibernate.infra.bot.config.Feature;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -34,11 +35,19 @@ public class CheckConfigSyntax {
 
 	void pullRequestChanged(
 			@PullRequest.Opened @PullRequest.Reopened @PullRequest.Synchronize
-			GHEventPayload.PullRequest payload) throws IOException {
+			GHEventPayload.PullRequest payload,
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
+		if ( !Feature.CHECK_CONFIG_SYNTAX.isEnabled( repositoryConfig ) ) {
+			return;
+		}
 		checkConfig( payload.getRepository(), payload.getPullRequest() );
 	}
 
-	void checkRunRequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload) throws IOException {
+	void checkRunRequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) throws IOException {
+		if ( !Feature.CHECK_CONFIG_SYNTAX.isEnabled( repositoryConfig ) ) {
+			return;
+		}
 		var checkRun = payload.getCheckRun();
 		if ( !CHECK_RUN_NAME.equals( checkRun.getName() ) ) {
 			return;
@@ -48,8 +57,12 @@ public class CheckConfigSyntax {
 		}
 	}
 
-	void checkSuiteRequested(@CheckSuite.Requested @CheckSuite.Rerequested GHEventPayload.CheckSuite payload)
+	void checkSuiteRequested(@CheckSuite.Requested @CheckSuite.Rerequested GHEventPayload.CheckSuite payload,
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig)
 			throws IOException {
+		if ( !Feature.CHECK_CONFIG_SYNTAX.isEnabled( repositoryConfig ) ) {
+			return;
+		}
 		for ( GHPullRequest pullRequest : payload.getCheckSuite().getPullRequests() ) {
 			checkConfig( payload.getRepository(), pullRequest );
 		}

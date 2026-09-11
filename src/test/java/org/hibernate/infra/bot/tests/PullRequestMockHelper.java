@@ -150,7 +150,7 @@ public class PullRequestMockHelper {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T> PagedIterable<T> mockLenientPagedIterable(List<T> contentMocks) {
+	public static <T> PagedIterable<T> mockLenientPagedIterable(List<T> contentMocks) {
 		PagedIterable<T> iterableMock = mock( PagedIterable.class );
 		lenient().when( iterableMock.iterator() ).thenAnswer( ignored -> {
 			PagedIterator<T> iteratorMock = mock( PagedIterator.class );

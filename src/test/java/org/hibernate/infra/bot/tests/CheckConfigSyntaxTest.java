@@ -4,6 +4,7 @@ import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,9 +12,12 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.Set;
 
+import org.hibernate.infra.bot.config.Feature;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -42,6 +46,15 @@ public class CheckConfigSyntaxTest extends AbstractPullRequestTest {
 
 	final GHCheckRunBuilder configCheckRunCreateBuilderMock = mockCheckRunBuilder();
 	final GHCheckRunBuilder configCheckRunUpdateBuilderMock = mockCheckRunBuilder();
+
+	@BeforeEach
+	void setupConfigFileProvider() {
+		RepositoryConfig featureConfig = new RepositoryConfig();
+		featureConfig.features = Set.of( Feature.CHECK_CONFIG_SYNTAX );
+		lenient().when( configFileProvider.fetchConfigFile(
+				any(), eq( "hibernate-github-bot.yml" ), any(), any() ) )
+				.thenReturn( Optional.of( featureConfig ) );
+	}
 
 	@Test
 	void configFileChanged_validConfig() throws IOException {
