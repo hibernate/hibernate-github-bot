@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.ignoreStubs;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -28,6 +30,7 @@ import org.kohsuke.github.GHCommitPointer;
 import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
+import org.kohsuke.github.GHPullRequestFileDetail;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.PagedIterable;
@@ -244,6 +247,8 @@ public class CheckPullRequestContributionRulesJiraTest extends AbstractPullReque
 					when( baseMock.getRepository() ).thenReturn( repoMock );
 					PagedIterable<GHIssueComment> commentIterableMock = mockPagedIterable( Collections.emptyList() );
 					when( pullRequestMock.listComments() ).thenReturn( commentIterableMock );
+					PagedIterable<GHPullRequestFileDetail> fileIterableMock = mockPagedIterable( Collections.emptyList() );
+					lenient().when( pullRequestMock.listFiles() ).thenReturn( fileIterableMock );
 
 					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
 				} )

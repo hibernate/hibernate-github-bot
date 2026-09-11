@@ -6,6 +6,7 @@ import static org.hibernate.infra.bot.tests.PullRequestMockHelper.mockPagedItera
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
