@@ -16,6 +16,8 @@ public interface DeploymentConfig {
 
 	Jira jira();
 
+	Zulip zulip();
+
 	default boolean isDryRun() {
 		Optional<Boolean> dryRun = dryRun();
 		return dryRun.isPresent() && dryRun.get();
@@ -34,5 +36,11 @@ public interface DeploymentConfig {
 		URI uri();
 		String username();
 		String token();
+	}
+
+	interface Zulip {
+		URI uri();
+		String email();
+		String apiKey();
 	}
 }

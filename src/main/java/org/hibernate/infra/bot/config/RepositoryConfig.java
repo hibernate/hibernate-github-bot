@@ -33,6 +33,13 @@ public class RepositoryConfig {
 
 	public BranchLabel branches;
 
+	public ZulipNotification zulipNotification;
+
+	public static class ZulipNotification {
+		public Optional<String> channel = Optional.empty();
+		public Optional<String> topic = Optional.empty();
+	}
+
 	public static class JiraConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
 
