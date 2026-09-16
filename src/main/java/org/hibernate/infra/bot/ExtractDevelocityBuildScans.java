@@ -57,6 +57,7 @@ import org.kohsuke.github.GHRepository;
 
 public class ExtractDevelocityBuildScans {
 	private static final String DEVELOCITY_CHECK_RUN_NAME = "Develocity Build Scans";
+	private static final int GITHUB_CHECK_RUN_TEXT_LIMIT = 65535;
 
 	@Inject
 	DeploymentConfig deploymentConfig;
@@ -530,6 +531,20 @@ public class ExtractDevelocityBuildScans {
 			}
 			text = formattedFailingTests + formattedBuildScanList + "\n\n```\n" + ExceptionUtils.getStackTrace( failure )
 					+ "\n```" + footer;
+		}
+
+		if ( text.length() > GITHUB_CHECK_RUN_TEXT_LIMIT ) {
+			int maxFailingTestsLength = GITHUB_CHECK_RUN_TEXT_LIMIT
+					- ( text.length() - formattedFailingTests.length() );
+			formattedFailingTests = reportFormatter.failingTests( failingTests, config,
+					Math.max( 0, maxFailingTestsLength ) );
+			if ( failure == null ) {
+				text = formattedFailingTests + formattedBuildScanList + footer;
+			}
+			else {
+				text = formattedFailingTests + formattedBuildScanList + "\n\n```\n"
+						+ ExceptionUtils.getStackTrace( failure ) + "\n```" + footer;
+			}
 		}
 
 		if ( deploymentConfig.isDryRun() ) {

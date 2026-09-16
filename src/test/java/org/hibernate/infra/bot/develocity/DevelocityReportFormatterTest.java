@@ -371,6 +371,112 @@ class DevelocityReportFormatterTest {
 	}
 
 	@Test
+	void failingTests_truncated() {
+		var failingScan = buildScanStub( "Jenkins", "hibernate-search/PR-4125", "Default build",
+				List.of( "Linux", "h2", "jdk-17" ),
+				List.of( "clean verify" ),
+				DevelocityCIBuildScan.Status.FAILURE,
+				DevelocityCIBuildScan.Status.FAILURE );
+
+		var failingTests = List.of(
+				new DevelocityFailingTest(
+						"org.hibernate.search.SomeTest",
+						List.of( failingScan ),
+						false, null,
+						false ),
+				new DevelocityFailingTest(
+						"org.hibernate.search.AnotherTest",
+						List.of( failingScan ),
+						false, null,
+						false ),
+				new DevelocityFailingTest(
+						"org.hibernate.search.YetAnotherTest",
+						List.of( failingScan ),
+						false, null,
+						false )
+		);
+		var config = new RepositoryConfig.Develocity.BuildScan(
+				true,
+				List.of(
+						new RepositoryConfig.Develocity.ColumnRule(
+								"DB",
+								Patterns.compile( "h2|postgres" ),
+								Optional.of( "$0" ) )
+				)
+		);
+
+		// First render without limit to get the full length
+		var fullResult = formatter.failingTests( failingTests, config );
+		assertThat( fullResult )
+				.contains( "|`SomeTest`|" )
+				.contains( "|`AnotherTest`|" )
+				.contains( "|`YetAnotherTest`|" );
+
+		// Now render with a limit that can only fit 1 test row
+		// Use a maxLength that is less than full but more than header + 1 row + note
+		int maxLength = fullResult.length() - 10;
+		var truncatedResult = formatter.failingTests( failingTests, config, maxLength );
+		assertThat( truncatedResult )
+				.hasSizeLessThanOrEqualTo( maxLength )
+				.contains( "## Failing Tests" )
+				.contains( "|`SomeTest`|" )
+				.contains( "more failing test" )
+				.contains( "not shown" );
+		// Should not contain the last test since we truncated
+		assertThat( truncatedResult )
+				.doesNotContain( "|`YetAnotherTest`|" );
+	}
+
+	@Test
+	void failingTests_truncated_noRowsFit() {
+		var failingScan = buildScanStub( "Jenkins", "hibernate-search/PR-4125", "Default build",
+				List.of( "Linux", "h2", "jdk-17" ),
+				List.of( "clean verify" ),
+				DevelocityCIBuildScan.Status.FAILURE,
+				DevelocityCIBuildScan.Status.FAILURE );
+
+		var failingTests = List.of(
+				new DevelocityFailingTest(
+						"org.hibernate.search.SomeTest",
+						List.of( failingScan ),
+						false, null,
+						false )
+		);
+		var config = new RepositoryConfig.Develocity.BuildScan();
+
+		// With an extremely small maxLength, no rows should fit
+		var result = formatter.failingTests( failingTests, config, 10 );
+		assertThat( result ).isEmpty();
+
+		// With maxLength=0 (no budget at all), should also return empty
+		result = formatter.failingTests( failingTests, config, 0 );
+		assertThat( result ).isEmpty();
+	}
+
+	@Test
+	void failingTests_noTruncationWhenWithinLimit() {
+		var failingScan = buildScanStub( "Jenkins", "hibernate-search/PR-4125", "Default build",
+				List.of( "Linux", "h2", "jdk-17" ),
+				List.of( "clean verify" ),
+				DevelocityCIBuildScan.Status.FAILURE,
+				DevelocityCIBuildScan.Status.FAILURE );
+
+		var failingTests = List.of(
+				new DevelocityFailingTest(
+						"org.hibernate.search.SomeTest",
+						List.of( failingScan ),
+						false, null,
+						false )
+		);
+		var config = new RepositoryConfig.Develocity.BuildScan();
+
+		var fullResult = formatter.failingTests( failingTests, config );
+		// With a generous maxLength, the result should be identical
+		var result = formatter.failingTests( failingTests, config, 100_000 );
+		assertThat( result ).isEqualTo( fullResult );
+	}
+
+	@Test
 	void footer_simple() {
 		assertThat( formatter.footer(
 				"(value:\"CI job=hibernate-orm-pipeline/PR-9171\" and value:\"CI build number=1\") or (value:\"CI run=11552691889\")",
