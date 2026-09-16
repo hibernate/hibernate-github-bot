@@ -39,6 +39,11 @@ public class DevelocityReportFormatter {
 
 	public String failingTests(List<DevelocityFailingTest> failingTests,
 			RepositoryConfig.Develocity.BuildScan config) {
+		return failingTests( failingTests, config, Integer.MAX_VALUE );
+	}
+
+	public String failingTests(List<DevelocityFailingTest> failingTests,
+			RepositoryConfig.Develocity.BuildScan config, int maxLength) {
 		if ( failingTests == null || failingTests.isEmpty() ) {
 			return "";
 		}
@@ -51,8 +56,39 @@ public class DevelocityReportFormatter {
 					.collect( Collectors.joining( " " ) );
 			rows.add( new FailingTestRow( test, whereColumn ) );
 		}
-		return Templates.failingTests( rows, showHistory )
-				.render();
+		String result = Templates.failingTests( rows, showHistory ).render();
+		if ( result.length() <= maxLength ) {
+			return result;
+		}
+		return truncateFailingTests( rows, showHistory, maxLength );
+	}
+
+	private String truncateFailingTests(List<FailingTestRow> rows, boolean showHistory, int maxLength) {
+		int lo = 0;
+		int hi = rows.size() - 1;
+		String bestResult = "";
+		while ( lo <= hi ) {
+			int mid = ( lo + hi ) / 2;
+			int hidden = rows.size() - mid;
+			String hiddenNote = "\n_(%d more failing test%s not shown)_\n".formatted(
+					hidden, hidden != 1 ? "s" : "" );
+			String rendered;
+			if ( mid == 0 ) {
+				rendered = "## Failing Tests\n\n" + hiddenNote + "\n";
+			}
+			else {
+				rendered = Templates.failingTests( rows.subList( 0, mid ), showHistory ).render()
+						+ hiddenNote;
+			}
+			if ( rendered.length() <= maxLength ) {
+				bestResult = rendered;
+				lo = mid + 1;
+			}
+			else {
+				hi = mid - 1;
+			}
+		}
+		return bestResult;
 	}
 
 	public record FailingTestRow(DevelocityFailingTest test, String where) {
