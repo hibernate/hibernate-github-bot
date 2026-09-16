@@ -1,6 +1,7 @@
 package org.hibernate.infra.bot;
 
 import java.io.IOException;
+import java.util.Map;
 
 import jakarta.inject.Inject;
 
@@ -20,6 +21,13 @@ import org.kohsuke.github.GHWorkflowRun;
 public class NotifyZulipOnBuildFailure {
 
 	private static final String DEFAULT_TOPIC = "GitHub workflow failures";
+	private static final String DEFAULT_CHANNEL = "hibernate-infra";
+	private static final Map<String, String> REPO_TO_CHANNEL = Map.of(
+			"hibernate-orm", "hibernate-orm-dev",
+			"hibernate-search", "hibernate-search-dev",
+			"hibernate-validator", "hibernate-validator-dev",
+			"hibernate-reactive", "hibernate-reactive-dev"
+	);
 
 	@Inject
 	DeploymentConfig deploymentConfig;
@@ -75,7 +83,7 @@ public class NotifyZulipOnBuildFailure {
 				&& repositoryConfig.zulipNotification.channel.isPresent() ) {
 			return repositoryConfig.zulipNotification.channel.get();
 		}
-		return repoName + "-dev";
+		return REPO_TO_CHANNEL.getOrDefault( repoName, DEFAULT_CHANNEL );
 	}
 
 	private String resolveTopic(RepositoryConfig repositoryConfig) {
