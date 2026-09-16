@@ -75,6 +75,82 @@ public class NotifyZulipOnBuildFailureTest {
 	}
 
 	@Test
+	void scheduleFailure_unknownRepo_defaultsToInfraChannel() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+				} )
+				.when()
+				.payloadFromString( """
+						{
+						  "action": "completed",
+						  "workflow_run": {
+						    "id": 14112498346,
+						    "name": "Some CI",
+						    "head_branch": "main",
+						    "head_sha": "ddbf12d7d8ff89a85c579c98c75358d8e9015cc5",
+						    "event": "schedule",
+						    "status": "completed",
+						    "conclusion": "failure",
+						    "workflow_id": 124546728,
+						    "url": "https://api.github.com/repos/hibernate/hibernate-tools/actions/runs/14112498346",
+						    "html_url": "https://github.com/hibernate/hibernate-tools/actions/runs/14112498346",
+						    "pull_requests": [],
+						    "created_at": "2025-03-27T17:05:01Z",
+						    "updated_at": "2025-03-27T17:19:44Z",
+						    "run_attempt": 1,
+						    "run_started_at": "2025-03-27T17:17:28Z",
+						    "jobs_url": "https://api.github.com/repos/hibernate/hibernate-tools/actions/runs/14112498346/jobs",
+						    "logs_url": "https://api.github.com/repos/hibernate/hibernate-tools/actions/runs/14112498346/logs",
+						    "check_suite_url": "https://api.github.com/repos/hibernate/hibernate-tools/check-suites/36324304144",
+						    "artifacts_url": "https://api.github.com/repos/hibernate/hibernate-tools/actions/runs/14112498346/artifacts",
+						    "cancel_url": "https://api.github.com/repos/hibernate/hibernate-tools/actions/runs/14112498346/cancel",
+						    "rerun_url": "https://api.github.com/repos/hibernate/hibernate-tools/actions/runs/14112498346/rerun",
+						    "workflow_url": "https://api.github.com/repos/hibernate/hibernate-tools/actions/workflows/124546728",
+						    "head_commit": {
+						      "id": "ddbf12d7d8ff89a85c579c98c75358d8e9015cc5",
+						      "message": "Some commit",
+						      "timestamp": "2025-03-27T16:54:54Z",
+						      "author": { "name": "Test", "email": "test@test.com" },
+						      "committer": { "name": "Test", "email": "test@test.com" }
+						    },
+						    "repository": {
+						      "id": 123456, "name": "hibernate-tools", "full_name": "hibernate/hibernate-tools",
+						      "private": false, "owner": { "login": "hibernate", "id": 348262 },
+						      "html_url": "https://github.com/hibernate/hibernate-tools"
+						    },
+						    "head_repository": {
+						      "id": 123456, "name": "hibernate-tools", "full_name": "hibernate/hibernate-tools",
+						      "private": false, "owner": { "login": "hibernate", "id": 348262 },
+						      "html_url": "https://github.com/hibernate/hibernate-tools"
+						    }
+						  },
+						  "workflow": {
+						    "id": 124546728, "name": "Some CI",
+						    "path": ".github/workflows/ci.yml", "state": "active"
+						  },
+						  "repository": {
+						    "id": 123456, "name": "hibernate-tools", "full_name": "hibernate/hibernate-tools",
+						    "private": false, "owner": { "login": "hibernate", "id": 348262 },
+						    "html_url": "https://github.com/hibernate/hibernate-tools"
+						  },
+						  "installation": { "id": 15390286 }
+						}
+						""" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-infra",
+							"GitHub workflow failures",
+							"**Some CI** failed on `main` in [hibernate/hibernate-tools](https://github.com/hibernate/hibernate-tools/actions/runs/14112498346)."
+					);
+				} );
+	}
+
+	@Test
 	void featureDisabled_noNotification() throws IOException {
 		given()
 				.github( mocks -> {
