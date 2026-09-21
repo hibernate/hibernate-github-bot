@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 public record GitHubActionsRunId(long run) {
 
-	private static final Pattern FORMAT = Pattern.compile( "actions/runs/(\\d+)/" );
+	private static final Pattern FORMAT = Pattern.compile( "(?:actions/)?runs/(\\d+)" );
 
 	public static GitHubActionsRunId parse(URL detailsUrl) {
 		var matcher = FORMAT.matcher( detailsUrl.toString() );
