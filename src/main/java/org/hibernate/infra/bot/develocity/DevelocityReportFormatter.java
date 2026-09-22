@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.RepositoryConfig;
+import org.hibernate.infra.bot.util.Markdown;
 
 import com.gradle.develocity.model.TestOutcomeDistribution;
 
@@ -50,10 +51,11 @@ public class DevelocityReportFormatter {
 		boolean showHistory = config.isHistoryEnabled();
 		List<FailingTestRow> rows = new ArrayList<>();
 		for ( DevelocityFailingTest test : failingTests ) {
-			String whereColumn = test.failingScans().stream()
+			List<String> whereEntries = test.failingScans().stream()
 					.map( scan -> formatWhereEntry( scan, test.name(), config ) )
 					.distinct()
-					.collect( Collectors.joining( " " ) );
+					.toList();
+			String whereColumn = Markdown.joinWithSoftWrapping( whereEntries, " ", " <br>", 30 );
 			rows.add( new FailingTestRow( test, whereColumn ) );
 		}
 		String result = Templates.failingTests( rows, showHistory ).render();
