@@ -421,7 +421,7 @@ public class CheckPullRequestContributionRules {
 		public void doPerform(PullRequestCheckRunContext context, PullRequestCheckRunOutput output) {
 			String body = context.pullRequest.getBody();
 			output.rule( "All pull request tasks should be completed.", false )
-					.result( !EditPullRequestBodyAddTaskList.containsUnfinishedTasks( body ) );
+					.result( !EditPullRequestBody.containsUnfinishedTasks( body ) );
 		}
 	}
 

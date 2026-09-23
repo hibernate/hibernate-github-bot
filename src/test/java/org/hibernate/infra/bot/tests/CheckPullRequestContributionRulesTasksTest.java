@@ -131,6 +131,7 @@ public class CheckPullRequestContributionRulesTasksTest extends AbstractPullRequ
 
 
 									 <!-- Hibernate GitHub Bot task list end -->""" );
+					verify( prMock ).refresh();
 					verifyNoMoreInteractions( ignoreStubs( mocks.ghObjects() ) );
 				} );
 	}

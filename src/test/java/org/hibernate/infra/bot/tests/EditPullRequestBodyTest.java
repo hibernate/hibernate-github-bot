@@ -15,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -26,7 +28,7 @@ import static org.mockito.Mockito.when;
 @QuarkusTest
 @GitHubAppTest
 @ExtendWith(MockitoExtension.class)
-public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTest {
+public class EditPullRequestBodyTest extends AbstractPullRequestTest {
 	@Test
 	void simple() throws IOException {
 		long repoId = 344815557L;
@@ -240,6 +242,60 @@ public class EditPullRequestBodyAddIssueLinksTest extends AbstractPullRequestTes
 				} );
 	}
 
+
+	@Test
+	void retryOnConcurrentModification() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
+		String modifiedBody = "Original pull request body\nUser edit";
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									features: [ EDIT_PULL_REQUEST_BODY_ADD_ISSUE_LINKS ]
+									jira:
+									  projectKey: "HSEARCH"
+									  insertLinksInPullRequests: true
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					GHPullRequest prMock = mocks.pullRequest( prId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.commit( "HSEARCH-1111 Commit 1" )
+							.commit( "HSEARCH-1112 Commit 2" )
+							.comment( "Some comment" );
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+
+					doAnswer( invocation -> {
+						doReturn( modifiedBody ).when( prMock ).getBody();
+						doAnswer( inv -> null ).when( prMock ).refresh();
+						return null;
+					} ).when( prMock ).refresh();
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					GHPullRequest prMock = mocks.pullRequest( prId );
+					ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass( String.class );
+					verify( prMock ).setBody( bodyCaptor.capture() );
+					assertThat( bodyCaptor.getValue() )
+							.isEqualTo( """
+									Original pull request body
+									User edit
+
+									<!-- Hibernate GitHub Bot issue links start -->
+									<!-- THIS SECTION IS AUTOMATICALLY GENERATED, ANY MANUAL CHANGES WILL BE LOST -->
+									https://hibernate.atlassian.net/browse/HSEARCH-1111
+									https://hibernate.atlassian.net/browse/HSEARCH-1112
+									<!-- Hibernate GitHub Bot issue links end -->""" );
+				} );
+	}
 
 	@Test
 	void tooManyIssues() throws IOException {
