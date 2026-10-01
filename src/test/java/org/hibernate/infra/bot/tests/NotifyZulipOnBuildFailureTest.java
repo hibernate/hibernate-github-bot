@@ -1,11 +1,15 @@
 package org.hibernate.infra.bot.tests;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.hibernate.infra.bot.zulip.ZulipClient;
 
@@ -16,6 +20,12 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.kohsuke.github.GHEvent;
+import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHWorkflowRun;
+import org.kohsuke.github.GHWorkflowRunQueryBuilder;
+import org.kohsuke.github.PagedIterable;
+import org.kohsuke.github.PagedIterator;
+import org.mockito.Answers;
 
 @QuarkusTest
 @GitHubAppTest
@@ -43,7 +53,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"stream",
 							"hibernate-orm-dev",
 							"GitHub workflow failures",
-							"**Hibernate ORM CI** failed on `main` in [hibernate/hibernate-orm](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)."
+							"[**Hibernate ORM CI**](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346) failed on `main` in hibernate/hibernate-orm."
 					);
 				} );
 	}
@@ -69,7 +79,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"stream",
 							"custom-channel",
 							"custom topic",
-							"**Hibernate ORM CI** failed on `main` in [hibernate/hibernate-orm](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)."
+							"[**Hibernate ORM CI**](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346) failed on `main` in hibernate/hibernate-orm."
 					);
 				} );
 	}
@@ -145,7 +155,32 @@ public class NotifyZulipOnBuildFailureTest {
 							"stream",
 							"hibernate-infra",
 							"GitHub workflow failures",
-							"**Some CI** failed on `main` in [hibernate/hibernate-tools](https://github.com/hibernate/hibernate-tools/actions/runs/14112498346)."
+							"[**Some CI**](https://github.com/hibernate/hibernate-tools/actions/runs/14112498346) failed on `main` in hibernate/hibernate-tools."
+					);
+				} );
+	}
+
+	@Test
+	void workflowRunFailure_resolvesTriggeringBranch() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockTriggeringWorkflowRun( repoMock, "ddbf12d7d8ff89a85c579c98c75358d8e9015cc5",
+							"6.6", GHEvent.PUSH );
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-workflow-run.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"[**GH Actions CI reporting**](https://github.com/hibernate/hibernate-orm/actions/runs/14200000000) failed on `6.6` in hibernate/hibernate-orm."
 					);
 				} );
 	}
@@ -265,5 +300,24 @@ public class NotifyZulipOnBuildFailureTest {
 				.github( mocks -> {
 					verifyNoInteractions( zulipClientMock );
 				} );
+	}
+
+	@SuppressWarnings("unchecked")
+	private void mockTriggeringWorkflowRun(GHRepository repoMock, String headSha,
+			String triggeringBranch, GHEvent triggeringEvent) throws IOException {
+		GHWorkflowRunQueryBuilder queryBuilder = mock( GHWorkflowRunQueryBuilder.class,
+				withSettings().defaultAnswer( Answers.RETURNS_SELF ) );
+		when( repoMock.queryWorkflowRuns() ).thenReturn( queryBuilder );
+
+		GHWorkflowRun triggeringRun = mock( GHWorkflowRun.class );
+		when( triggeringRun.getHeadBranch() ).thenReturn( triggeringBranch );
+		when( triggeringRun.getEvent() ).thenReturn( triggeringEvent );
+
+		PagedIterable<GHWorkflowRun> iterable = mock( PagedIterable.class );
+		when( queryBuilder.list() ).thenReturn( iterable );
+		PagedIterator<GHWorkflowRun> iterator = mock( PagedIterator.class );
+		when( iterable.iterator() ).thenReturn( iterator );
+		when( iterator.hasNext() ).thenReturn( true, false );
+		when( iterator.next() ).thenReturn( triggeringRun );
 	}
 }
