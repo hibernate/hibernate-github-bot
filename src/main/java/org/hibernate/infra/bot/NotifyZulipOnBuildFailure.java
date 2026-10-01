@@ -2,12 +2,14 @@ package org.hibernate.infra.bot;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.inject.Inject;
 
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.Feature;
 import org.hibernate.infra.bot.config.RepositoryConfig;
+import org.hibernate.infra.bot.util.Streams;
 import org.hibernate.infra.bot.zulip.ZulipClient;
 
 import io.quarkiverse.githubapp.ConfigFile;
@@ -16,6 +18,7 @@ import io.quarkus.logging.Log;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHEventPayload;
+import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHWorkflowRun;
 
 public class NotifyZulipOnBuildFailure {
@@ -52,15 +55,17 @@ public class NotifyZulipOnBuildFailure {
 			return;
 		}
 
-		String repoFullName = payload.getRepository().getFullName();
-		String repoName = payload.getRepository().getName();
+		GHRepository repository = payload.getRepository();
+		String repoFullName = repository.getFullName();
+		String repoName = repository.getName();
 		String channel = resolveChannel( repositoryConfig, repoName );
 		String topic = resolveTopic( repositoryConfig );
-		String message = "**%s** failed on `%s` in [%s](%s).".formatted(
+		String branch = resolveBranch( workflowRun, repository );
+		String message = "[**%s**](%s) failed on `%s` in %s.".formatted(
 				workflowRun.getName(),
-				workflowRun.getHeadBranch(),
-				repoFullName,
-				workflowRun.getHtmlUrl().toString()
+				workflowRun.getHtmlUrl().toString(),
+				branch,
+				repoFullName
 		);
 
 		if ( deploymentConfig.isDryRun() ) {
@@ -76,6 +81,29 @@ public class NotifyZulipOnBuildFailure {
 			Log.errorf( e, "Failed to send Zulip notification for %s workflow run %s",
 					repoFullName, workflowRun.getHtmlUrl() );
 		}
+	}
+
+	private String resolveBranch(GHWorkflowRun workflowRun, GHRepository repository) throws IOException {
+		if ( workflowRun.getEvent() != GHEvent.WORKFLOW_RUN ) {
+			return workflowRun.getHeadBranch();
+		}
+		// For workflow_run-triggered runs, head_branch is always the default branch.
+		// Find the triggering run (same head_sha, different event type) to get the actual branch.
+		try {
+			Optional<GHWorkflowRun> triggeringRun = Streams.toStream( repository.queryWorkflowRuns()
+					.headSha( workflowRun.getHeadSha() )
+					.list() )
+					.filter( run -> run.getEvent() != GHEvent.WORKFLOW_RUN )
+					.findFirst();
+			if ( triggeringRun.isPresent() ) {
+				return triggeringRun.get().getHeadBranch();
+			}
+		}
+		catch (Exception e) {
+			Log.warnf( e, "Failed to find triggering workflow run for %s, falling back to head branch",
+					workflowRun.getHtmlUrl() );
+		}
+		return workflowRun.getHeadBranch();
 	}
 
 	private String resolveChannel(RepositoryConfig repositoryConfig, String repoName) {
