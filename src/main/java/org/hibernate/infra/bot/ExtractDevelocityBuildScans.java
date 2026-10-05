@@ -517,7 +517,18 @@ public class ExtractDevelocityBuildScans {
 		String text;
 		if ( failure == null ) {
 			conclusion = GHCheckRun.Conclusion.NEUTRAL;
-			title = "Found %s build scan%s".formatted( buildScans.size(), buildScans.size() != 1 ? "s" : "" );
+			long failedCount = buildScans.stream()
+					.filter( s -> s.status() == DevelocityCIBuildScan.Status.FAILURE )
+					.count();
+			if ( buildScans.isEmpty() ) {
+				title = "No build scan found";
+			}
+			else if ( failedCount > 0 ) {
+				title = "%s/%s failed".formatted( failedCount, buildScans.size() );
+			}
+			else {
+				title = "%s succeeded".formatted( buildScans.size() );
+			}
 			text = formattedFailingTests + formattedBuildScanList + footer;
 		}
 		else {
