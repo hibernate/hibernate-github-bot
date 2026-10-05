@@ -11,7 +11,8 @@ public record DevelocityCIBuildScan(String provider, String hostname,
 									URI buildScanUri, URI failuresUri, URI testsUri, URI logsUri) {
 
 	public static final Comparator<? super DevelocityCIBuildScan> COMPARATOR =
-			Comparator.comparing( DevelocityCIBuildScan::provider )
+			Comparator.comparing( DevelocityCIBuildScan::status, Comparator.reverseOrder() )
+					.thenComparing( DevelocityCIBuildScan::provider )
 					.thenComparing( DevelocityCIBuildScan::jobOrWorkflow )
 					// Ideally we'd sort by "job run ID", but we don't have that information.
 					// Since each host only runs one job at any given time,
