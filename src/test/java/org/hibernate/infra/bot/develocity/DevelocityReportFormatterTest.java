@@ -274,6 +274,25 @@ class DevelocityReportFormatterTest {
 	}
 
 	@Test
+	void comparator_failureBeforeSuccess() {
+		var success1 = buildScanStub( "GitHub", "workflow-A", "",
+				List.of(), List.of(),
+				DevelocityCIBuildScan.Status.SUCCESS, DevelocityCIBuildScan.Status.SUCCESS );
+		var success2 = buildScanStub( "Jenkins", "job-B", "",
+				List.of(), List.of(),
+				DevelocityCIBuildScan.Status.SUCCESS, DevelocityCIBuildScan.Status.SUCCESS );
+		var failure1 = buildScanStub( "Jenkins", "job-B", "",
+				List.of(), List.of(),
+				DevelocityCIBuildScan.Status.FAILURE, DevelocityCIBuildScan.Status.FAILURE );
+		var failure2 = buildScanStub( "GitHub", "workflow-A", "",
+				List.of(), List.of(),
+				DevelocityCIBuildScan.Status.FAILURE, DevelocityCIBuildScan.Status.SUCCESS );
+		var list = new java.util.ArrayList<>( List.of( success1, success2, failure1, failure2 ) );
+		list.sort( DevelocityCIBuildScan.COMPARATOR );
+		assertThat( list ).containsExactly( failure2, failure1, success1, success2 );
+	}
+
+	@Test
 	void failingTests_empty() {
 		assertThat( formatter.failingTests( List.of(), new RepositoryConfig.Develocity.BuildScan() ) )
 				.isEqualTo( "" );
