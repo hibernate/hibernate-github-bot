@@ -21,7 +21,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.gradle.develocity.api.BuildsApi;
 import com.gradle.develocity.api.TestsApi;
+import com.gradle.develocity.model.Build;
+import com.gradle.develocity.model.BuildAttributesEnvironment;
+import com.gradle.develocity.model.BuildAttributesLink;
+import com.gradle.develocity.model.BuildAttributesValue;
+import com.gradle.develocity.model.BuildModels;
+import com.gradle.develocity.model.BuildModelsMavenAttributes;
 import com.gradle.develocity.model.BuildsQuery;
+import com.gradle.develocity.model.MavenAttributes;
 
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
 import io.quarkus.test.InjectMock;
@@ -68,6 +75,7 @@ public class ExtractDevelocityBuildScansTest {
 
 	@Test
 	void checkRunCompleted_githubActions() throws IOException {
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
 		given()
 				.github( mocks -> {
 					mocks.configFile( "hibernate-github-bot.yml" )
@@ -77,7 +85,7 @@ public class ExtractDevelocityBuildScansTest {
 
 					mockGetCheckRuns( repoMock, HEAD_SHA,
 							mockGitHubActionsCheckRun( HEAD_SHA ) );
-					mockDevelocityCheckRun( repoMock, HEAD_SHA );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
 				} )
 				.when()
 				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
@@ -93,6 +101,10 @@ public class ExtractDevelocityBuildScansTest {
 					assertThat( query )
 							.contains( "value:\"Git commit id=" + HEAD_SHA + "\"" )
 							.contains( "value:\"CI run=27276276443\"" );
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "title" )
+							.isEqualTo( "No build scan found" );
 				} );
 	}
 
@@ -307,6 +319,65 @@ public class ExtractDevelocityBuildScansTest {
 				} );
 	}
 
+	@Test
+	void checkRunCompleted_titleAllSucceeded() throws IOException {
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false ),
+				createBuildScan( "scan2", false, false ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "title" )
+							.isEqualTo( "2 succeeded" );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_titleSomeFailed() throws IOException {
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false ),
+				createBuildScan( "scan2", true, false ),
+				createBuildScan( "scan3", false, false ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "title" )
+							.isEqualTo( "1/3 failed" );
+				} );
+	}
+
 	private GHCheckRun mockGitHubActionsCheckRun(String sha) throws IOException {
 		GHCheckRun checkRun = mock( GHCheckRun.class );
 		GHApp app = mock( GHApp.class );
@@ -335,7 +406,7 @@ public class ExtractDevelocityBuildScansTest {
 		when( iterable.toList() ).thenReturn( List.of( checkRuns ) );
 	}
 
-	private void mockDevelocityCheckRun(GHRepository repoMock, String sha) throws IOException {
+	private GHCheckRunBuilder mockDevelocityCheckRun(GHRepository repoMock, String sha) throws IOException {
 		GHCheckRunBuilder createBuilder = mock( GHCheckRunBuilder.class,
 				withSettings().defaultAnswer( Answers.RETURNS_SELF ) );
 		when( repoMock.createCheckRun( "Develocity Build Scans", sha ) ).thenReturn( createBuilder );
@@ -347,5 +418,44 @@ public class ExtractDevelocityBuildScansTest {
 				withSettings().defaultAnswer( Answers.RETURNS_SELF ) );
 		when( repoMock.updateCheckRun( DEVELOCITY_CHECK_RUN_ID ) ).thenReturn( updateBuilder );
 		when( updateBuilder.create() ).thenReturn( checkRunMock );
+		return updateBuilder;
+	}
+
+	private Build createBuildScan(String id, boolean hasFailed, boolean hasVerificationFailure) {
+		var env = new BuildAttributesEnvironment();
+		env.setPublicHostname( "host1" );
+
+		var providerValue = new BuildAttributesValue();
+		providerValue.setName( "CI provider" );
+		providerValue.setValue( "GitHub" );
+
+		var jobValue = new BuildAttributesValue();
+		jobValue.setName( "CI workflow" );
+		jobValue.setValue( "Build" );
+
+		var link = new BuildAttributesLink();
+		link.setLabel( "GitHub Actions build" );
+		link.setUrl( "https://github.com/hibernate/hibernate-orm/actions/runs/123" );
+
+		var attrs = new MavenAttributes();
+		attrs.setEnvironment( env );
+		attrs.setTags( List.of( "CI" ) );
+		attrs.setValues( List.of( providerValue, jobValue ) );
+		attrs.setLinks( List.of( link ) );
+		attrs.setRequestedGoals( List.of( "clean", "install" ) );
+		attrs.setHasFailed( hasFailed );
+		attrs.setHasVerificationFailure( hasVerificationFailure );
+
+		var mavenBuild = new BuildModelsMavenAttributes();
+		mavenBuild.setModel( attrs );
+
+		var models = new BuildModels();
+		models.setMavenAttributes( mavenBuild );
+
+		var build = new Build();
+		build.setId( id );
+		build.setAvailableAt( 1000L );
+		build.setModels( models );
+		return build;
 	}
 }
