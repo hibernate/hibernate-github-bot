@@ -61,7 +61,7 @@ public class NotifyZulipOnBuildFailure {
 		String channel = resolveChannel( repositoryConfig, repoName );
 		String topic = resolveTopic( repositoryConfig );
 		String branch = resolveBranch( workflowRun, repository );
-		String message = "[**%s**](%s) failed on `%s` in %s.".formatted(
+		String message = "**[%s](%s)** failed on `%s` in %s.".formatted(
 				workflowRun.getName(),
 				workflowRun.getHtmlUrl().toString(),
 				branch,
