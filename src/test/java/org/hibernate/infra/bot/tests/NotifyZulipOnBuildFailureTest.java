@@ -53,7 +53,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"stream",
 							"hibernate-orm-dev",
 							"GitHub workflow failures",
-							"[**Hibernate ORM CI**](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346) failed on `main` in hibernate/hibernate-orm."
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
 					);
 				} );
 	}
@@ -79,7 +79,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"stream",
 							"custom-channel",
 							"custom topic",
-							"[**Hibernate ORM CI**](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346) failed on `main` in hibernate/hibernate-orm."
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
 					);
 				} );
 	}
@@ -155,7 +155,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"stream",
 							"hibernate-infra",
 							"GitHub workflow failures",
-							"[**Some CI**](https://github.com/hibernate/hibernate-tools/actions/runs/14112498346) failed on `main` in hibernate/hibernate-tools."
+							"**[Some CI](https://github.com/hibernate/hibernate-tools/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-tools."
 					);
 				} );
 	}
@@ -180,7 +180,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"stream",
 							"hibernate-orm-dev",
 							"GitHub workflow failures",
-							"[**GH Actions CI reporting**](https://github.com/hibernate/hibernate-orm/actions/runs/14200000000) failed on `6.6` in hibernate/hibernate-orm."
+							"**[GH Actions CI reporting](https://github.com/hibernate/hibernate-orm/actions/runs/14200000000)** failed on `6.6` in hibernate/hibernate-orm."
 					);
 				} );
 	}
