@@ -128,11 +128,12 @@ public class DevelocityReportFormatter {
 		return parts.isEmpty() ? "—" : String.join( " ", parts );
 	}
 
-	public String ciStatus(List<CIJobInfo> runningChecks, List<CIJobInfo> failedChecksWithoutScan) {
-		if ( runningChecks.isEmpty() && failedChecksWithoutScan.isEmpty() ) {
+	public String ciStatus(List<CIJobInfo> runningChecks, List<CIJobInfo> failedChecksWithoutScan,
+			List<CIJobInfo> checksWithoutScan) {
+		if ( runningChecks.isEmpty() && failedChecksWithoutScan.isEmpty() && checksWithoutScan.isEmpty() ) {
 			return "";
 		}
-		return Templates.ciStatus( runningChecks, failedChecksWithoutScan )
+		return Templates.ciStatus( runningChecks, failedChecksWithoutScan, checksWithoutScan )
 				.render();
 	}
 
@@ -201,7 +202,7 @@ public class DevelocityReportFormatter {
 		public static native TemplateInstance failingTests(List<FailingTestRow> rows, boolean showHistory);
 
 		public static native TemplateInstance ciStatus(List<CIJobInfo> runningChecks,
-				List<CIJobInfo> failedChecksWithoutScan);
+				List<CIJobInfo> failedChecksWithoutScan, List<CIJobInfo> checksWithoutScan);
 
 		public static native TemplateInstance footer(String query, boolean debug);
 	}

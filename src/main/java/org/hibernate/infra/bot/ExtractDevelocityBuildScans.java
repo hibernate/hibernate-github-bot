@@ -578,6 +578,7 @@ public class ExtractDevelocityBuildScans {
 			throws IOException {
 		List<CIJobInfo> runningChecks = new ArrayList<>();
 		List<CIJobInfo> failedChecksWithoutScan = new ArrayList<>();
+		List<CIJobInfo> checksWithoutScan = new ArrayList<>();
 		try {
 			Set<Long> coveredGHARunIds = extractCoveredGHARunIds( buildScans );
 			Set<String> coveredJenkinsJobs = extractCoveredJenkinsJobs( buildScans );
@@ -588,9 +589,13 @@ public class ExtractDevelocityBuildScans {
 				if ( checkRun.getStatus() != GHCheckRun.Status.COMPLETED ) {
 					runningChecks.add( toCIJobInfo( checkRun ) );
 				}
-				else if ( isFailedConclusion( checkRun.getConclusion() )
-						&& !isCoveredByBuildScan( checkRun, coveredGHARunIds, coveredJenkinsJobs ) ) {
-					failedChecksWithoutScan.add( toCIJobInfo( checkRun ) );
+				else if ( !isCoveredByBuildScan( checkRun, coveredGHARunIds, coveredJenkinsJobs ) ) {
+					if ( isFailedConclusion( checkRun.getConclusion() ) ) {
+						failedChecksWithoutScan.add( toCIJobInfo( checkRun ) );
+					}
+					else {
+						checksWithoutScan.add( toCIJobInfo( checkRun ) );
+					}
 				}
 			}
 		}
@@ -605,7 +610,8 @@ public class ExtractDevelocityBuildScans {
 		try {
 			formattedBuildScanList = reportFormatter.summary( buildScans, config );
 			formattedFailingTests = reportFormatter.failingTests( failingTests, config );
-			formattedCIStatus = reportFormatter.ciStatus( runningChecks, failedChecksWithoutScan );
+			formattedCIStatus = reportFormatter.ciStatus( runningChecks, failedChecksWithoutScan,
+					checksWithoutScan );
 			footer = reportFormatter.footer( query, false );
 		}
 		catch (RuntimeException e) {
