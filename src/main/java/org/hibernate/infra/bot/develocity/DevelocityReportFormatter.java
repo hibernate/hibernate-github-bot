@@ -1,6 +1,7 @@
 package org.hibernate.infra.bot.develocity;
 
 import java.net.URI;
+import java.net.URL;
 import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
@@ -11,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -126,6 +128,14 @@ public class DevelocityReportFormatter {
 		return parts.isEmpty() ? "—" : String.join( " ", parts );
 	}
 
+	public String ciStatus(List<CIJobInfo> runningChecks, List<CIJobInfo> failedChecksWithoutScan) {
+		if ( runningChecks.isEmpty() && failedChecksWithoutScan.isEmpty() ) {
+			return "";
+		}
+		return Templates.ciStatus( runningChecks, failedChecksWithoutScan )
+				.render();
+	}
+
 	public String footer(String query, boolean debug) {
 		return Templates.footer( query, debug )
 				.render();
@@ -190,12 +200,21 @@ public class DevelocityReportFormatter {
 
 		public static native TemplateInstance failingTests(List<FailingTestRow> rows, boolean showHistory);
 
+		public static native TemplateInstance ciStatus(List<CIJobInfo> runningChecks,
+				List<CIJobInfo> failedChecksWithoutScan);
+
 		public static native TemplateInstance footer(String query, boolean debug);
 	}
 
 	@TemplateExtension
 	@SuppressWarnings("unused")
 	private static class TemplateExtensions {
+
+		static String link(CIJobInfo job) {
+			return job.url()
+					.map( url -> "[%s](%s)".formatted( job.name(), url ) )
+					.orElse( job.name() );
+		}
 
 		static String backQuoted(String content) {
 			return content == null || content.isBlank() ? null : '`' + content + '`';

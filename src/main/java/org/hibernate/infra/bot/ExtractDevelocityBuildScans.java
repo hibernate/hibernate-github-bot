@@ -2,12 +2,14 @@ package org.hibernate.infra.bot;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -18,6 +20,7 @@ import jakarta.inject.Inject;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.Feature;
 import org.hibernate.infra.bot.config.RepositoryConfig;
+import org.hibernate.infra.bot.develocity.CIJobInfo;
 import org.hibernate.infra.bot.develocity.DevelocityCIBuildScan;
 import org.hibernate.infra.bot.develocity.DevelocityFailingTest;
 import org.hibernate.infra.bot.develocity.DevelocityReportFormatter;
@@ -56,7 +59,7 @@ import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
 
 public class ExtractDevelocityBuildScans {
-	private static final String DEVELOCITY_CHECK_RUN_NAME = "Develocity Build Scans";
+	private static final String DEVELOCITY_CHECK_RUN_NAME = "📋 Build reports";
 	private static final int GITHUB_CHECK_RUN_TEXT_LIMIT = 65535;
 
 	@Inject
@@ -209,7 +212,8 @@ public class ExtractDevelocityBuildScans {
 				}
 			}
 
-			updateDevelocityCheck( repository, config, checkId, query, buildScans, failingTests, failure );
+			updateDevelocityCheck( repository, config, checkId, query, buildScans, failingTests, checkRuns,
+					failure );
 		}
 		catch (IOException | RuntimeException e) {
 			Log.errorf( e, "Failed to report build scans from commit %s" + sha );
@@ -493,14 +497,38 @@ public class ExtractDevelocityBuildScans {
 
 	private void updateDevelocityCheck(GHRepository repository, RepositoryConfig.Develocity.BuildScan config,
 			long checkId, String query, List<DevelocityCIBuildScan> buildScans,
-			List<DevelocityFailingTest> failingTests, Throwable failure)
+			List<DevelocityFailingTest> failingTests, List<GHCheckRun> allCheckRuns, Throwable failure)
 			throws IOException {
+		List<CIJobInfo> runningChecks = new ArrayList<>();
+		List<CIJobInfo> failedChecksWithoutScan = new ArrayList<>();
+		try {
+			Set<Long> coveredGHARunIds = extractCoveredGHARunIds( buildScans );
+			Set<String> coveredJenkinsJobs = extractCoveredJenkinsJobs( buildScans );
+			for ( GHCheckRun checkRun : allCheckRuns ) {
+				if ( !isJobOrWorkflow( checkRun ) ) {
+					continue;
+				}
+				if ( checkRun.getStatus() != GHCheckRun.Status.COMPLETED ) {
+					runningChecks.add( toCIJobInfo( checkRun ) );
+				}
+				else if ( isFailedConclusion( checkRun.getConclusion() )
+						&& !isCoveredByBuildScan( checkRun, coveredGHARunIds, coveredJenkinsJobs ) ) {
+					failedChecksWithoutScan.add( toCIJobInfo( checkRun ) );
+				}
+			}
+		}
+		catch (RuntimeException e) {
+			Log.warnf( e, "Failed to compute CI job status for check run %s", checkId );
+		}
+
 		String formattedBuildScanList = "";
 		String formattedFailingTests = "";
+		String formattedCIStatus = "";
 		String footer = "";
 		try {
 			formattedBuildScanList = reportFormatter.summary( buildScans, config );
 			formattedFailingTests = reportFormatter.failingTests( failingTests, config );
+			formattedCIStatus = reportFormatter.ciStatus( runningChecks, failedChecksWithoutScan );
 			footer = reportFormatter.footer( query, false );
 		}
 		catch (RuntimeException e) {
@@ -512,26 +540,18 @@ public class ExtractDevelocityBuildScans {
 			}
 		}
 
+		long failedScanCount = buildScans.stream()
+				.filter( s -> s.status() == DevelocityCIBuildScan.Status.FAILURE )
+				.count();
+		boolean hasFailures = failure != null || failedScanCount > 0 || !failedChecksWithoutScan.isEmpty();
+		boolean hasRunning = !runningChecks.isEmpty();
+
+		GHCheckRun.Status status;
 		GHCheckRun.Conclusion conclusion;
 		String title;
 		String text;
-		if ( failure == null ) {
-			conclusion = GHCheckRun.Conclusion.NEUTRAL;
-			long failedCount = buildScans.stream()
-					.filter( s -> s.status() == DevelocityCIBuildScan.Status.FAILURE )
-					.count();
-			if ( buildScans.isEmpty() ) {
-				title = "No build scan found";
-			}
-			else if ( failedCount > 0 ) {
-				title = "%s/%s failed".formatted( failedCount, buildScans.size() );
-			}
-			else {
-				title = "%s succeeded".formatted( buildScans.size() );
-			}
-			text = formattedFailingTests + formattedBuildScanList + footer;
-		}
-		else {
+		if ( failure != null ) {
+			status = GHCheckRun.Status.COMPLETED;
 			conclusion = GHCheckRun.Conclusion.FAILURE;
 			title = "Develocity Build Scans extraction failed with exception";
 			try {
@@ -540,8 +560,49 @@ public class ExtractDevelocityBuildScans {
 			catch (RuntimeException e) {
 				failure.addSuppressed( e );
 			}
-			text = formattedFailingTests + formattedBuildScanList + "\n\n```\n" + ExceptionUtils.getStackTrace( failure )
-					+ "\n```" + footer;
+			text = formattedCIStatus + formattedFailingTests + formattedBuildScanList + "\n\n```\n"
+					+ ExceptionUtils.getStackTrace( failure ) + "\n```" + footer;
+		}
+		else if ( hasFailures ) {
+			status = GHCheckRun.Status.COMPLETED;
+			conclusion = GHCheckRun.Conclusion.FAILURE;
+			long totalFailed = failedScanCount + failedChecksWithoutScan.size();
+			long totalKnown = buildScans.size() + failedChecksWithoutScan.size();
+			if ( buildScans.isEmpty() && failedChecksWithoutScan.isEmpty() ) {
+				title = "No build scan found";
+			}
+			else if ( hasRunning ) {
+				title = "%s/%s failed — %s still running".formatted( totalFailed, totalKnown,
+						runningChecks.size() );
+			}
+			else {
+				title = "%s/%s failed".formatted( totalFailed, totalKnown );
+			}
+			text = formattedCIStatus + formattedFailingTests + formattedBuildScanList + footer;
+		}
+		else if ( hasRunning ) {
+			status = GHCheckRun.Status.IN_PROGRESS;
+			conclusion = null;
+			if ( buildScans.isEmpty() ) {
+				title = "%s still running".formatted( runningChecks.size() );
+			}
+			else {
+				title = "%s scans collected — %s still running".formatted( buildScans.size(),
+						runningChecks.size() );
+			}
+			text = formattedCIStatus + formattedFailingTests + formattedBuildScanList + footer;
+		}
+		else {
+			status = GHCheckRun.Status.COMPLETED;
+			if ( buildScans.isEmpty() ) {
+				conclusion = GHCheckRun.Conclusion.NEUTRAL;
+				title = "No build scan found";
+			}
+			else {
+				conclusion = GHCheckRun.Conclusion.SUCCESS;
+				title = "%s succeeded".formatted( buildScans.size() );
+			}
+			text = formattedCIStatus + formattedFailingTests + formattedBuildScanList + footer;
 		}
 
 		if ( text.length() > GITHUB_CHECK_RUN_TEXT_LIMIT ) {
@@ -549,29 +610,86 @@ public class ExtractDevelocityBuildScans {
 					- ( text.length() - formattedFailingTests.length() );
 			formattedFailingTests = reportFormatter.failingTests( failingTests, config,
 					Math.max( 0, maxFailingTestsLength ) );
-			if ( failure == null ) {
-				text = formattedFailingTests + formattedBuildScanList + footer;
+			if ( failure != null ) {
+				text = formattedCIStatus + formattedFailingTests + formattedBuildScanList + "\n\n```\n"
+						+ ExceptionUtils.getStackTrace( failure ) + "\n```" + footer;
 			}
 			else {
-				text = formattedFailingTests + formattedBuildScanList + "\n\n```\n"
-						+ ExceptionUtils.getStackTrace( failure ) + "\n```" + footer;
+				text = formattedCIStatus + formattedFailingTests + formattedBuildScanList + footer;
 			}
 		}
 
 		if ( deploymentConfig.isDryRun() ) {
-			Log.infof( "SHA %s - Update check run '%s' with conclusion '%s' and text:\n%s",
-					checkId, DEVELOCITY_CHECK_RUN_NAME,
-					failure == null ? GHCheckRun.Conclusion.NEUTRAL : GHCheckRun.Conclusion.FAILURE );
+			Log.infof( "SHA %s - Update check run '%s' with status '%s', conclusion '%s' and text:\n%s",
+					checkId, DEVELOCITY_CHECK_RUN_NAME, status, conclusion, text );
 			return;
 		}
-		repository.updateCheckRun( checkId )
-				.withStatus( GHCheckRun.Status.COMPLETED )
-				.withConclusion( conclusion )
-				.add( new GHCheckRunBuilder.Output(
+		var builder = repository.updateCheckRun( checkId )
+				.withStatus( status );
+		if ( conclusion != null ) {
+			builder.withConclusion( conclusion );
+		}
+		builder.add( new GHCheckRunBuilder.Output(
 						title,
 						text
 				) )
 				.create();
+	}
+
+	private static boolean isFailedConclusion(GHCheckRun.Conclusion conclusion) {
+		return conclusion == GHCheckRun.Conclusion.FAILURE
+				|| conclusion == GHCheckRun.Conclusion.CANCELLED
+				|| conclusion == GHCheckRun.Conclusion.TIMED_OUT;
+	}
+
+	private CIJobInfo toCIJobInfo(GHCheckRun checkRun) {
+		return new CIJobInfo( checkRun.getName(),
+				Optional.ofNullable( checkRun.getDetailsUrl() ) );
+	}
+
+	private Set<Long> extractCoveredGHARunIds(List<DevelocityCIBuildScan> buildScans) {
+		Set<Long> runIds = new HashSet<>();
+		for ( var scan : buildScans ) {
+			if ( scan.jobOrWorkflowUri() != null ) {
+				try {
+					runIds.add( GitHubActionsRunId.parse( scan.jobOrWorkflowUri().toURL() ).run() );
+				}
+				catch (Exception e) {
+					// Not a GHA URL, ignore
+				}
+			}
+		}
+		return runIds;
+	}
+
+	private Set<String> extractCoveredJenkinsJobs(List<DevelocityCIBuildScan> buildScans) {
+		return buildScans.stream()
+				.filter( s -> "Jenkins".equals( s.provider() ) )
+				.map( DevelocityCIBuildScan::jobOrWorkflow )
+				.collect( Collectors.toSet() );
+	}
+
+	private boolean isCoveredByBuildScan(GHCheckRun checkRun, Set<Long> coveredGHARunIds,
+			Set<String> coveredJenkinsJobs) {
+		if ( isGitHubActionsWorkflow( checkRun ) ) {
+			try {
+				long runId = GitHubActionsRunId.parse( checkRun.getDetailsUrl() ).run();
+				return coveredGHARunIds.contains( runId );
+			}
+			catch (Exception e) {
+				return false;
+			}
+		}
+		else if ( isJenkinsBuild( checkRun ) ) {
+			try {
+				String job = JenkinsRunId.parse( checkRun.getExternalId() ).job();
+				return coveredJenkinsJobs.contains( job );
+			}
+			catch (Exception e) {
+				return false;
+			}
+		}
+		return false;
 	}
 
 }
