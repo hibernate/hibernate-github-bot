@@ -3,6 +3,7 @@ package org.hibernate.infra.bot.tests;
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -93,7 +94,7 @@ public class ExtractDevelocityBuildScansTest {
 				.then()
 				.github( mocks -> {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
-					verify( repoMock ).createCheckRun( "Develocity Build Scans", HEAD_SHA );
+					verify( repoMock ).createCheckRun( "📋 Build reports", HEAD_SHA );
 					verify( repoMock ).updateCheckRun( DEVELOCITY_CHECK_RUN_ID );
 					var queryCaptor = ArgumentCaptor.forClass( BuildsQuery.BuildsQueryQueryParam.class );
 					verify( develocityBuildsApiMock ).getBuilds( queryCaptor.capture() );
@@ -127,7 +128,7 @@ public class ExtractDevelocityBuildScansTest {
 				.then()
 				.github( mocks -> {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
-					verify( repoMock ).createCheckRun( "Develocity Build Scans", HEAD_SHA );
+					verify( repoMock ).createCheckRun( "📋 Build reports", HEAD_SHA );
 					verify( repoMock ).updateCheckRun( DEVELOCITY_CHECK_RUN_ID );
 					var queryCaptor = ArgumentCaptor.forClass( BuildsQuery.BuildsQueryQueryParam.class );
 					verify( develocityBuildsApiMock ).getBuilds( queryCaptor.capture() );
@@ -166,7 +167,7 @@ public class ExtractDevelocityBuildScansTest {
 						  "action": "completed",
 						  "check_run": {
 						    "id": 80558394108,
-						    "name": "Develocity Build Scans",
+						    "name": "📋 Build reports",
 						    "head_sha": "%s",
 						    "external_id": "",
 						    "status": "completed",
@@ -218,7 +219,7 @@ public class ExtractDevelocityBuildScansTest {
 				.then()
 				.github( mocks -> {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
-					verify( repoMock ).createCheckRun( "Develocity Build Scans", WORKFLOW_HEAD_SHA );
+					verify( repoMock ).createCheckRun( "📋 Build reports", WORKFLOW_HEAD_SHA );
 					verify( repoMock ).updateCheckRun( DEVELOCITY_CHECK_RUN_ID );
 					var queryCaptor = ArgumentCaptor.forClass( BuildsQuery.BuildsQueryQueryParam.class );
 					verify( develocityBuildsApiMock ).getBuilds( queryCaptor.capture() );
@@ -272,7 +273,7 @@ public class ExtractDevelocityBuildScansTest {
 				.then()
 				.github( mocks -> {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
-					verify( repoMock ).createCheckRun( "Develocity Build Scans", HEAD_SHA );
+					verify( repoMock ).createCheckRun( "📋 Build reports", HEAD_SHA );
 					verify( repoMock ).updateCheckRun( DEVELOCITY_CHECK_RUN_ID );
 					verify( develocityBuildsApiMock ).getBuilds( any() );
 				} );
@@ -314,7 +315,7 @@ public class ExtractDevelocityBuildScansTest {
 				.then()
 				.github( mocks -> {
 					GHRepository repoMock = mocks.repository( REPO_NAME );
-					verify( repoMock, never() ).createCheckRun( "Develocity Build Scans", HEAD_SHA );
+					verify( repoMock, never() ).createCheckRun( "📋 Build reports", HEAD_SHA );
 					verifyNoMoreInteractions( develocityBuildsApiMock );
 				} );
 	}
@@ -375,10 +376,161 @@ public class ExtractDevelocityBuildScansTest {
 					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
 					assertThat( outputCaptor.getValue() ).extracting( "title" )
 							.isEqualTo( "1/3 failed" );
+					verify( updateBuilderRef.get() ).withConclusion( GHCheckRun.Conclusion.FAILURE );
+					verify( updateBuilderRef.get() ).withStatus( GHCheckRun.Status.COMPLETED );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_allSucceeded_conclusionSuccess() throws IOException {
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false ),
+				createBuildScan( "scan2", false, false ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					verify( updateBuilderRef.get() ).withConclusion( GHCheckRun.Conclusion.SUCCESS );
+					verify( updateBuilderRef.get() ).withStatus( GHCheckRun.Status.COMPLETED );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_noScans_conclusionNeutral() throws IOException {
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					verify( updateBuilderRef.get() ).withConclusion( GHCheckRun.Conclusion.NEUTRAL );
+					verify( updateBuilderRef.get() ).withStatus( GHCheckRun.Status.COMPLETED );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_otherChecksStillRunning_inProgress() throws IOException {
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ),
+							mockGitHubActionsCheckRun( HEAD_SHA, "GraalVM", 99999L,
+									GHCheckRun.Status.IN_PROGRESS, null ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					verify( updateBuilderRef.get() ).withStatus( GHCheckRun.Status.IN_PROGRESS );
+					verify( updateBuilderRef.get(), never() ).withConclusion( any() );
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "title" )
+							.isEqualTo( "1 scans collected — 1 still running" );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_failedScanAndStillRunning_failureImmediate() throws IOException {
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", true, false ),
+				createBuildScan( "scan2", false, false ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ),
+							mockGitHubActionsCheckRun( HEAD_SHA, "GraalVM", 99999L,
+									GHCheckRun.Status.IN_PROGRESS, null ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					verify( updateBuilderRef.get() ).withConclusion( GHCheckRun.Conclusion.FAILURE );
+					verify( updateBuilderRef.get() ).withStatus( GHCheckRun.Status.COMPLETED );
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "title" )
+							.isEqualTo( "1/2 failed — 1 still running" );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_failedCheckWithoutScan() throws IOException {
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ),
+							mockGitHubActionsCheckRun( HEAD_SHA, "actionlint", 88888L,
+									GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.FAILURE ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					verify( updateBuilderRef.get() ).withConclusion( GHCheckRun.Conclusion.FAILURE );
+					verify( updateBuilderRef.get() ).withStatus( GHCheckRun.Status.COMPLETED );
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "title" )
+							.isEqualTo( "1/1 failed" );
 				} );
 	}
 
 	private GHCheckRun mockGitHubActionsCheckRun(String sha) throws IOException {
+		return mockGitHubActionsCheckRun( sha, GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS );
+	}
+
+	private GHCheckRun mockGitHubActionsCheckRun(String sha, GHCheckRun.Status status,
+			GHCheckRun.Conclusion conclusion) throws IOException {
 		GHCheckRun checkRun = mock( GHCheckRun.class );
 		GHApp app = mock( GHApp.class );
 		when( checkRun.getApp() ).thenReturn( app );
@@ -386,16 +538,48 @@ public class ExtractDevelocityBuildScansTest {
 		when( checkRun.getHeadSha() ).thenReturn( sha );
 		when( checkRun.getDetailsUrl() ).thenReturn(
 				new URL( "https://github.com/hibernate/hibernate-orm/actions/runs/27276276443/job/80558394108" ) );
+		lenient().when( checkRun.getName() ).thenReturn( "Build" );
+		when( checkRun.getStatus() ).thenReturn( status );
+		if ( conclusion != null ) {
+			lenient().when( checkRun.getConclusion() ).thenReturn( conclusion );
+		}
+		return checkRun;
+	}
+
+	private GHCheckRun mockGitHubActionsCheckRun(String sha, String name, long runId,
+			GHCheckRun.Status status, GHCheckRun.Conclusion conclusion) throws IOException {
+		GHCheckRun checkRun = mock( GHCheckRun.class );
+		GHApp app = mock( GHApp.class );
+		when( checkRun.getApp() ).thenReturn( app );
+		when( app.getSlug() ).thenReturn( "github-actions" );
+		when( checkRun.getHeadSha() ).thenReturn( sha );
+		when( checkRun.getDetailsUrl() ).thenReturn(
+				new URL( "https://github.com/hibernate/hibernate-orm/actions/runs/" + runId + "/job/1" ) );
+		lenient().when( checkRun.getName() ).thenReturn( name );
+		when( checkRun.getStatus() ).thenReturn( status );
+		if ( conclusion != null ) {
+			lenient().when( checkRun.getConclusion() ).thenReturn( conclusion );
+		}
 		return checkRun;
 	}
 
 	private GHCheckRun mockJenkinsCheckRun(String sha) {
+		return mockJenkinsCheckRun( sha, GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS );
+	}
+
+	private GHCheckRun mockJenkinsCheckRun(String sha, GHCheckRun.Status status,
+			GHCheckRun.Conclusion conclusion) {
 		GHCheckRun checkRun = mock( GHCheckRun.class );
 		GHApp app = mock( GHApp.class );
 		when( checkRun.getApp() ).thenReturn( app );
 		when( app.getId() ).thenReturn( 347853L );
 		when( checkRun.getHeadSha() ).thenReturn( sha );
 		when( checkRun.getExternalId() ).thenReturn( "hibernate-orm-pipeline#1234" );
+		lenient().when( checkRun.getName() ).thenReturn( "Jenkins CI (hibernate-orm-pipeline)" );
+		when( checkRun.getStatus() ).thenReturn( status );
+		if ( conclusion != null ) {
+			lenient().when( checkRun.getConclusion() ).thenReturn( conclusion );
+		}
 		return checkRun;
 	}
 
@@ -409,7 +593,7 @@ public class ExtractDevelocityBuildScansTest {
 	private GHCheckRunBuilder mockDevelocityCheckRun(GHRepository repoMock, String sha) throws IOException {
 		GHCheckRunBuilder createBuilder = mock( GHCheckRunBuilder.class,
 				withSettings().defaultAnswer( Answers.RETURNS_SELF ) );
-		when( repoMock.createCheckRun( "Develocity Build Scans", sha ) ).thenReturn( createBuilder );
+		when( repoMock.createCheckRun( "📋 Build reports", sha ) ).thenReturn( createBuilder );
 		GHCheckRun checkRunMock = mock( GHCheckRun.class );
 		when( checkRunMock.getId() ).thenReturn( DEVELOCITY_CHECK_RUN_ID );
 		when( createBuilder.create() ).thenReturn( checkRunMock );
