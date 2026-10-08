@@ -60,6 +60,7 @@ import org.kohsuke.github.GHRepository;
 
 public class ExtractDevelocityBuildScans {
 	private static final String DEVELOCITY_CHECK_RUN_NAME = "📋 Build reports";
+	private static final String LEGACY_CHECK_RUN_NAME = "Develocity Build Scans";
 	private static final int GITHUB_CHECK_RUN_TEXT_LIMIT = 65535;
 
 	@Inject
@@ -83,7 +84,7 @@ public class ExtractDevelocityBuildScans {
 		}
 		var repository = payload.getRepository();
 		var checkRun = payload.getCheckRun();
-		if ( !DEVELOCITY_CHECK_RUN_NAME.equals( checkRun.getName() ) ) {
+		if ( !isOwnCheckRun( checkRun.getName() ) ) {
 			return;
 		}
 		String sha = checkRun.getHeadSha();
@@ -144,7 +145,7 @@ public class ExtractDevelocityBuildScans {
 		}
 		var repository = payload.getRepository();
 		var checkRun = payload.getCheckRun();
-		if ( DEVELOCITY_CHECK_RUN_NAME.equals( checkRun.getName() ) ) {
+		if ( isOwnCheckRun( checkRun.getName() ) ) {
 			// Don't react to our own checks.
 			return;
 		}
@@ -159,6 +160,7 @@ public class ExtractDevelocityBuildScans {
 			if ( checkRuns.stream().noneMatch( this::isJobOrWorkflow ) ) {
 				return;
 			}
+			supersedeLegacyCheckRuns( repository, checkRuns );
 			long checkId = createDevelocityCheck( repository, sha );
 			Throwable failure = null;
 			String query = "";
@@ -247,6 +249,10 @@ public class ExtractDevelocityBuildScans {
 			// else: unsupported check, ignore
 		}
 		return queries.stream().collect( Collectors.joining( ") or (", "(", ")" ) );
+	}
+
+	private static boolean isOwnCheckRun(String name) {
+		return DEVELOCITY_CHECK_RUN_NAME.equals( name ) || LEGACY_CHECK_RUN_NAME.equals( name );
 	}
 
 	private boolean isJobOrWorkflow(GHCheckRun checkRun) {
@@ -486,6 +492,30 @@ public class ExtractDevelocityBuildScans {
 			}
 		}
 		return null;
+	}
+
+	private void supersedeLegacyCheckRuns(GHRepository repository, List<GHCheckRun> checkRuns) {
+		if ( deploymentConfig.isDryRun() ) {
+			return;
+		}
+		for ( GHCheckRun checkRun : checkRuns ) {
+			if ( LEGACY_CHECK_RUN_NAME.equals( checkRun.getName() ) ) {
+				try {
+					repository.updateCheckRun( checkRun.getId() )
+							.withStatus( GHCheckRun.Status.COMPLETED )
+							.withConclusion( GHCheckRun.Conclusion.NEUTRAL )
+							.add( new GHCheckRunBuilder.Output(
+									"Superseded by " + DEVELOCITY_CHECK_RUN_NAME,
+									"This check has been renamed. See the **" + DEVELOCITY_CHECK_RUN_NAME
+											+ "** check for build reports."
+							) )
+							.create();
+				}
+				catch (IOException | RuntimeException e) {
+					Log.warnf( e, "Failed to supersede legacy check run %s", checkRun.getId() );
+				}
+			}
+		}
 	}
 
 	private long createDevelocityCheck(GHRepository repository, String sha) throws IOException {
