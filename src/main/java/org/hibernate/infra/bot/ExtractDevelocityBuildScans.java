@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -76,6 +78,9 @@ public class ExtractDevelocityBuildScans {
 	DevelocityReportFormatter reportFormatter;
 
 	private static final Pattern PR_TAG_PATTERN = Pattern.compile( "PR-\\d+" );
+
+	private static final long DEBOUNCE_MILLIS = 10_000;
+	private static final ConcurrentHashMap<String, Long> recentlyProcessedStartEvents = new ConcurrentHashMap<>();
 
 	void checkRunRerequested(@CheckRun.Rerequested GHEventPayload.CheckRun payload,
 			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) {
@@ -151,6 +156,48 @@ public class ExtractDevelocityBuildScans {
 		}
 		var sha = payload.getCheckRun().getHeadSha();
 		extractCIBuildScans( repository, buildScanConfig, sha );
+	}
+
+	void checkRunCreated(@CheckRun.Created GHEventPayload.CheckRun payload,
+			@ConfigFile("hibernate-github-bot.yml") RepositoryConfig repositoryConfig) {
+		if ( !Feature.EXTRACT_DEVELOCITY_BUILD_SCANS.isEnabled( repositoryConfig ) ) {
+			return;
+		}
+		if ( repositoryConfig == null
+				|| repositoryConfig.develocity == null
+				|| repositoryConfig.develocity.buildScan == null ) {
+			return;
+		}
+		var buildScanConfig = repositoryConfig.develocity.buildScan;
+		if ( !buildScanConfig.addCheck ) {
+			return;
+		}
+		var repository = payload.getRepository();
+		var checkRun = payload.getCheckRun();
+		if ( isOwnCheckRun( checkRun.getName() ) ) {
+			return;
+		}
+		var sha = checkRun.getHeadSha();
+		if ( shouldDebounceStartEvent( sha ) ) {
+			return;
+		}
+		extractCIBuildScans( repository, buildScanConfig, sha );
+	}
+
+	private boolean shouldDebounceStartEvent(String sha) {
+		long now = System.currentTimeMillis();
+		AtomicBoolean debounced = new AtomicBoolean( false );
+		recentlyProcessedStartEvents.compute( sha, (key, lastProcessed) -> {
+			if ( lastProcessed != null && now - lastProcessed < DEBOUNCE_MILLIS ) {
+				debounced.set( true );
+				return lastProcessed;
+			}
+			return now;
+		} );
+		if ( recentlyProcessedStartEvents.size() > 1000 ) {
+			recentlyProcessedStartEvents.entrySet().removeIf( e -> now - e.getValue() > 60_000 );
+		}
+		return debounced.get();
 	}
 
 	private void extractCIBuildScans(GHRepository repository, RepositoryConfig.Develocity.BuildScan config,
