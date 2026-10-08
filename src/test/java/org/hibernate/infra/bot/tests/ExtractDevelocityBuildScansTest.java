@@ -525,6 +525,41 @@ public class ExtractDevelocityBuildScansTest {
 				} );
 	}
 
+	@Test
+	void checkRunCompleted_successfulChecksWithoutScan() throws IOException {
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false, 27276276443L ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA ),
+							mockGitHubActionsCheckRun( HEAD_SHA, "OpenJDK 25 - db2", 88888L,
+									GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					verify( updateBuilderRef.get() ).withConclusion( GHCheckRun.Conclusion.SUCCESS );
+					verify( updateBuilderRef.get() ).withStatus( GHCheckRun.Status.COMPLETED );
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "title" )
+							.isEqualTo( "1 succeeded" );
+					assertThat( outputCaptor.getValue() ).extracting( "summary" ).asString()
+							.contains( "1 CI check without a build scan" )
+							.contains( "OpenJDK 25 - db2" );
+				} );
+	}
+
 	private GHCheckRun mockGitHubActionsCheckRun(String sha) throws IOException {
 		return mockGitHubActionsCheckRun( sha, GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS );
 	}
@@ -605,7 +640,17 @@ public class ExtractDevelocityBuildScansTest {
 		return updateBuilder;
 	}
 
+	private Build createBuildScan(String id, boolean hasFailed, boolean hasVerificationFailure, long ghaRunId) {
+		return createBuildScan( id, hasFailed, hasVerificationFailure,
+				"https://github.com/hibernate/hibernate-orm/actions/runs/" + ghaRunId );
+	}
+
 	private Build createBuildScan(String id, boolean hasFailed, boolean hasVerificationFailure) {
+		return createBuildScan( id, hasFailed, hasVerificationFailure,
+				"https://github.com/hibernate/hibernate-orm/actions/runs/123" );
+	}
+
+	private Build createBuildScan(String id, boolean hasFailed, boolean hasVerificationFailure, String ghaUrl) {
 		var env = new BuildAttributesEnvironment();
 		env.setPublicHostname( "host1" );
 
@@ -619,7 +664,7 @@ public class ExtractDevelocityBuildScansTest {
 
 		var link = new BuildAttributesLink();
 		link.setLabel( "GitHub Actions build" );
-		link.setUrl( "https://github.com/hibernate/hibernate-orm/actions/runs/123" );
+		link.setUrl( ghaUrl );
 
 		var attrs = new MavenAttributes();
 		attrs.setEnvironment( env );
