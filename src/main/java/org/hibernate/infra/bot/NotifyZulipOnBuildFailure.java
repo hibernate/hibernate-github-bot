@@ -9,7 +9,7 @@ import jakarta.inject.Inject;
 import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.Feature;
 import org.hibernate.infra.bot.config.RepositoryConfig;
-import org.hibernate.infra.bot.util.Streams;
+import io.quarkiverse.githubapp.GitHubApiUtil;
 import org.hibernate.infra.bot.zulip.ZulipClient;
 
 import io.quarkiverse.githubapp.ConfigFile;
@@ -90,7 +90,7 @@ public class NotifyZulipOnBuildFailure {
 		// For workflow_run-triggered runs, head_branch is always the default branch.
 		// Find the triggering run (same head_sha, different event type) to get the actual branch.
 		try {
-			Optional<GHWorkflowRun> triggeringRun = Streams.toStream( repository.queryWorkflowRuns()
+			Optional<GHWorkflowRun> triggeringRun = GitHubApiUtil.toStream( repository.queryWorkflowRuns()
 					.headSha( workflowRun.getHeadSha() )
 					.list() )
 					.filter( run -> run.getEvent() != GHEvent.WORKFLOW_RUN )
