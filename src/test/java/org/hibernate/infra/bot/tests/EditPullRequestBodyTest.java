@@ -348,4 +348,45 @@ public class EditPullRequestBodyTest extends AbstractPullRequestTest {
 					verifyNoMoreInteractions( ignoreStubs( mocks.ghObjects() ) );
 				} );
 	}
+
+	@Test
+	void tooManyIssues_staleLinksSectionRemoved() throws IOException {
+		long repoId = 344815557L;
+		long prId = 585627026L;
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									features: [ EDIT_PULL_REQUEST_BODY_ADD_ISSUE_LINKS ]
+									jira:
+									  projectKey: "HSEARCH"
+									  insertLinksInPullRequests: true
+									  issueLinksLimit: 3
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.commit( "HSEARCH-1111 Commit 1" )
+							.commit( "HSEARCH-1112 Commit 2" )
+							.commit( "HSEARCH-1113 HSEARCH-1114 HSEARCH-1115 Commit 3" )
+							.commit( "HSEARCH-1116 Commit 4" )
+							.comment( "Some comment" )
+							.comment( "Some other comment" );
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-with-stale-links.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					GHPullRequest prMock = mocks.pullRequest( prId );
+					ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass( String.class );
+					verify( prMock ).setBody( bodyCaptor.capture() );
+					assertThat( bodyCaptor.getValue() )
+							.isEqualTo( "Original pull request body" );
+				} );
+	}
 }

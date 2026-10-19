@@ -275,17 +275,18 @@ public class EditPullRequestBody {
 			}
 		} );
 
+		final int startIndex = body.indexOf( ISSUE_LINKS_START_MARKER );
+		final int endIndex = startIndex > -1 ? body.indexOf( ISSUE_LINKS_END_MARKER ) : -1;
+
 		if ( issueKeys.isEmpty() ) {
 			LOG.debug( "Found no issue keys in commits, terminating." );
 			return body;
 		}
 		else if ( issueKeys.size() > repositoryConfig.jira.getIssueLinksLimit() ) {
-			LOG.debug( "Found more issues than the configured limit, terminating." );
-			return body;
+			LOG.debug( "Found more issues than the configured limit, removing any stale links section." );
+			return removeLinksSection( body, startIndex, endIndex );
 		}
 
-		final int startIndex = body.indexOf( ISSUE_LINKS_START_MARKER );
-		final int endIndex = startIndex > -1 ? body.indexOf( ISSUE_LINKS_END_MARKER ) : -1;
 		final String bodyWithoutLinks = removeLinksSection( body, startIndex, endIndex );
 
 		final String linksSection = constructLinksSection( issueKeys, bodyWithoutLinks );
