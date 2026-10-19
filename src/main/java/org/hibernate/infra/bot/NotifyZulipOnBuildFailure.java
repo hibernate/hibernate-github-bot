@@ -93,9 +93,13 @@ public class NotifyZulipOnBuildFailure {
 					.filter( job -> job.getConclusion() == GHWorkflowRun.Conclusion.FAILURE )
 					.toList();
 			if ( !failingJobs.isEmpty() ) {
-				message.append( "\nFailing jobs:" );
-				for ( GHWorkflowJob job : failingJobs ) {
-					message.append( "\n- **[%s](%s)**".formatted( job.getName(), job.getHtmlUrl().toString() ) );
+				message.append( "\nFailing jobs: " );
+				for ( int i = 0; i < failingJobs.size(); i++ ) {
+					if ( i > 0 ) {
+						message.append( ", " );
+					}
+					GHWorkflowJob job = failingJobs.get( i );
+					message.append( "**[%s](%s)**".formatted( job.getName(), job.getHtmlUrl().toString() ) );
 				}
 			}
 		}

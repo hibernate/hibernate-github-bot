@@ -331,9 +331,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"hibernate-orm-dev",
 							"GitHub workflow failures",
 							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
-									+ "\nFailing jobs:"
-									+ "\n- **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
-									+ "\n- **[Test - MySQL](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102)**"
+									+ "\nFailing jobs: **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**, **[Test - MySQL](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102)**"
 					);
 				} );
 	}
@@ -361,8 +359,7 @@ public class NotifyZulipOnBuildFailureTest {
 							"hibernate-orm-dev",
 							"GitHub workflow failures",
 							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
-									+ "\nFailing jobs:"
-									+ "\n- **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
+									+ "\nFailing jobs: **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
 					);
 				} );
 	}
