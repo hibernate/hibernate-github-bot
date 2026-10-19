@@ -1,6 +1,7 @@
 package org.hibernate.infra.bot;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHWorkflowJob;
 import org.kohsuke.github.GHWorkflowRun;
 
 public class NotifyZulipOnBuildFailure {
@@ -61,25 +63,44 @@ public class NotifyZulipOnBuildFailure {
 		String channel = resolveChannel( repositoryConfig, repoName );
 		String topic = resolveTopic( repositoryConfig );
 		String branch = resolveBranch( workflowRun, repository );
-		String message = "**[%s](%s)** failed on `%s` in %s.".formatted(
-				workflowRun.getName(),
-				workflowRun.getHtmlUrl().toString(),
-				branch,
-				repoFullName
-		);
+		StringBuilder message = new StringBuilder(
+				"**[%s](%s)** failed on `%s` in %s.".formatted(
+						workflowRun.getName(),
+						workflowRun.getHtmlUrl().toString(),
+						branch,
+						repoFullName
+				) );
+		appendFailingJobs( message, workflowRun );
 
 		if ( deploymentConfig.isDryRun() ) {
 			Log.infof( "Zulip notification (dry run) - channel: %s, topic: %s, message: %s",
-					channel, topic, message );
+					channel, topic, message.toString() );
 			return;
 		}
 
 		try {
-			zulipClient.sendMessage( "stream", channel, topic, message );
+			zulipClient.sendMessage( "stream", channel, topic, message.toString() );
 		}
 		catch (RuntimeException e) {
 			Log.errorf( e, "Failed to send Zulip notification for %s workflow run %s",
 					repoFullName, workflowRun.getHtmlUrl() );
+		}
+	}
+
+	private void appendFailingJobs(StringBuilder message, GHWorkflowRun workflowRun) {
+		try {
+			List<GHWorkflowJob> failingJobs = Streams.toStream( workflowRun.listJobs() )
+					.filter( job -> job.getConclusion() == GHWorkflowRun.Conclusion.FAILURE )
+					.toList();
+			if ( !failingJobs.isEmpty() ) {
+				message.append( "\nFailing jobs:" );
+				for ( GHWorkflowJob job : failingJobs ) {
+					message.append( "\n- **[%s](%s)**".formatted( job.getName(), job.getHtmlUrl().toString() ) );
+				}
+			}
+		}
+		catch (Exception e) {
+			Log.warnf( e, "Failed to retrieve failing jobs for workflow run %s", workflowRun.getJobsUrl() );
 		}
 	}
 

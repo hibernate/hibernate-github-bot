@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 
 import org.hibernate.infra.bot.zulip.ZulipClient;
@@ -21,6 +22,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHWorkflowJob;
 import org.kohsuke.github.GHWorkflowRun;
 import org.kohsuke.github.GHWorkflowRunQueryBuilder;
 import org.kohsuke.github.PagedIterable;
@@ -300,6 +302,141 @@ public class NotifyZulipOnBuildFailureTest {
 				.github( mocks -> {
 					verifyNoInteractions( zulipClientMock );
 				} );
+	}
+
+	@Test
+	void scheduleFailure_withFailingJobs_listsJobsInNotification() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Build", "https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101",
+									GHWorkflowRun.Conclusion.FAILURE ),
+							new JobInfo( "Test - MySQL", "https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102",
+									GHWorkflowRun.Conclusion.FAILURE ),
+							new JobInfo( "Test - PostgreSQL", "https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/103",
+									GHWorkflowRun.Conclusion.SUCCESS )
+					);
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs:"
+									+ "\n- **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
+									+ "\n- **[Test - MySQL](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102)**"
+					);
+				} );
+	}
+
+	@Test
+	void scheduleFailure_singleFailingJob_listsJobInNotification() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Build", "https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101",
+									GHWorkflowRun.Conclusion.FAILURE )
+					);
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs:"
+									+ "\n- **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
+					);
+				} );
+	}
+
+	@Test
+	void scheduleFailure_noFailingJobs_noJobsListed() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock );
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+					);
+				} );
+	}
+
+	private record JobInfo(String name, String htmlUrl, GHWorkflowRun.Conclusion conclusion) {
+	}
+
+	@SuppressWarnings("unchecked")
+	private void mockFailingJobs(GHWorkflowRun workflowRunMock, JobInfo... jobs) {
+		PagedIterable<GHWorkflowJob> iterable = mock( PagedIterable.class );
+		when( workflowRunMock.listJobs() ).thenReturn( iterable );
+		PagedIterator<GHWorkflowJob> iterator = mock( PagedIterator.class );
+		when( iterable.iterator() ).thenReturn( iterator );
+
+		if ( jobs.length == 0 ) {
+			when( iterator.hasNext() ).thenReturn( false );
+			return;
+		}
+
+		Boolean[] subsequentHasNext = new Boolean[jobs.length];
+		for ( int i = 0; i < jobs.length - 1; i++ ) {
+			subsequentHasNext[i] = true;
+		}
+		subsequentHasNext[jobs.length - 1] = false;
+		when( iterator.hasNext() ).thenReturn( true, subsequentHasNext );
+
+		GHWorkflowJob[] mockJobs = new GHWorkflowJob[jobs.length];
+		for ( int i = 0; i < jobs.length; i++ ) {
+			mockJobs[i] = mock( GHWorkflowJob.class );
+			when( mockJobs[i].getName() ).thenReturn( jobs[i].name() );
+			when( mockJobs[i].getConclusion() ).thenReturn( jobs[i].conclusion() );
+			when( mockJobs[i].getHtmlUrl() ).thenReturn( url( jobs[i].htmlUrl() ) );
+		}
+		if ( jobs.length == 1 ) {
+			when( iterator.next() ).thenReturn( mockJobs[0] );
+		}
+		else {
+			GHWorkflowJob[] rest = new GHWorkflowJob[jobs.length - 1];
+			System.arraycopy( mockJobs, 1, rest, 0, jobs.length - 1 );
+			when( iterator.next() ).thenReturn( mockJobs[0], rest );
+		}
+	}
+
+	private static URL url(String url) {
+		try {
+			return new URL( url );
+		}
+		catch (Exception e) {
+			throw new RuntimeException( e );
+		}
 	}
 
 	@SuppressWarnings("unchecked")
