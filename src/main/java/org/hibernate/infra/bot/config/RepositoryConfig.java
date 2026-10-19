@@ -44,7 +44,7 @@ public class RepositoryConfig {
 		private Optional<Pattern> issueKeyPattern = Optional.empty();
 
 		private Optional<Boolean> insertLinksInPullRequests = Optional.empty();
-		private Integer issueLinksLimit = 3;
+		private Integer issueLinksLimit = 10;
 
 		private List<IgnoreConfiguration> ignore = Collections.emptyList();
 
