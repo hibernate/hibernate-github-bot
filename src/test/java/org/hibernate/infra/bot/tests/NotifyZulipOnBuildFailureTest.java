@@ -388,6 +388,41 @@ public class NotifyZulipOnBuildFailureTest {
 				} );
 	}
 
+	@Test
+	void scheduleFailure_reusableWorkflowJobs_listsLeafJobsInNotification() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Build / compile",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/201",
+									GHWorkflowRun.Conclusion.FAILURE ),
+							new JobInfo( "Build / test",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/202",
+									GHWorkflowRun.Conclusion.SUCCESS ),
+							new JobInfo( "Deploy / staging / verify",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/203",
+									GHWorkflowRun.Conclusion.FAILURE )
+					);
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs: **[Build / compile](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/201)**, **[Deploy / staging / verify](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/203)**"
+					);
+				} );
+	}
+
 	private record JobInfo(String name, String htmlUrl, GHWorkflowRun.Conclusion conclusion) {
 	}
 
