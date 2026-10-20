@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -197,18 +200,31 @@ public class EditPullRequestBody {
 		if ( issueKeys.isEmpty() ) {
 			return null;
 		}
-		StringBuilder taskList = new StringBuilder();
-		taskList.append( "Please make sure that the following tasks are completed:\n" );
 		JiraIssues issues = jiraRestClient.find(
 				"key IN (" + String.join( ",", issueKeys ) + ") ORDER BY KEY DESC", "issuetype,key" );
+
+		Map<String, List<JiraIssue>> issuesByType = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
 		for ( JiraIssue issue : issues.issues ) {
+			String typeName = issue.fields != null && issue.fields.issuetype != null
+					&& issue.fields.issuetype.name != null
+							? issue.fields.issuetype.name
+							: "Other";
+			issuesByType.computeIfAbsent( typeName, k -> new ArrayList<>() ).add( issue );
+		}
+
+		StringBuilder taskList = new StringBuilder();
+		taskList.append( "Please make sure that the following tasks are completed:\n" );
+		for ( Map.Entry<String, List<JiraIssue>> entry : issuesByType.entrySet() ) {
+			String typeName = entry.getKey();
+			List<JiraIssue> typeIssues = entry.getValue();
 			taskList.append( "Tasks specific to " )
-					.append( issue.key )
+					.append( typeIssues.stream().map( i -> i.key ).sorted().collect(
+							Collectors.joining( "/" ) ) )
 					.append( " (" )
-					.append( issue.fields.issuetype.name )
+					.append( typeName )
 					.append( "):\n" );
 			addTasks( taskList, taskListConfiguration.getTasks().getOrDefault(
-					issue.fields.issuetype.name.toLowerCase( Locale.ROOT ),
+					typeName.toLowerCase( Locale.ROOT ),
 					taskListConfiguration.defaultTasks() ) );
 		}
 		return taskList.toString();

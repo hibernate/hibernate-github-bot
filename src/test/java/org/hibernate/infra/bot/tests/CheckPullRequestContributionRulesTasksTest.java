@@ -188,6 +188,159 @@ public class CheckPullRequestContributionRulesTasksTest extends AbstractPullRequ
 	}
 
 	@Test
+	void createTasksGroupedByType() throws IOException {
+		JiraIssues issues = new JiraIssues();
+		JiraIssue issue1 = new JiraIssue();
+		issue1.key = "HSEARCH-1111";
+		issue1.fields = new JiraFields();
+		issue1.fields.issuetype = new JiraSimpleObject();
+		issue1.fields.issuetype.name = "Bug";
+		JiraIssue issue2 = new JiraIssue();
+		issue2.key = "HSEARCH-1112";
+		issue2.fields = new JiraFields();
+		issue2.fields.issuetype = new JiraSimpleObject();
+		issue2.fields.issuetype.name = "Bug";
+		JiraIssue issue3 = new JiraIssue();
+		issue3.key = "HSEARCH-1113";
+		issue3.fields = new JiraFields();
+		issue3.fields.issuetype = new JiraSimpleObject();
+		issue3.fields.issuetype.name = "Improvement";
+		issues.issues = List.of( issue1, issue2, issue3 );
+		when( mock.find( anyString(), anyString() ) ).thenReturn( issues );
+
+		long repoId = 344815557L;
+		long prId = 585627026L;
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									features: [ EDIT_PULL_REQUEST_BODY_ADD_TASK_LIST ]
+									jira:
+									  projectKey: "HSEARCH"
+									pullRequestTasks:
+									  enabled: true
+									  tasks:
+									    default:
+									      - task1
+									    bug:
+									      - bug task1
+									      - bug task2
+									    improvement:
+									      - improvement task1
+									      - improvement task2
+									      - improvement task3
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.commit( "HSEARCH-1111 Commit 1" )
+							.commit( "HSEARCH-1112 Commit 2" )
+							.commit( "HSEARCH-1113 Commit 3" )
+							.comment( "some comment" );
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-no-body.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					GHPullRequest prMock = mocks.pullRequest( prId );
+					ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass( String.class );
+					verify( prMock ).setBody( bodyCaptor.capture() );
+					assertThat( bodyCaptor.getValue() )
+							.isEqualTo( """
+
+
+									 ---
+									 <!-- Hibernate GitHub Bot task list start -->
+									 Please make sure that the following tasks are completed:
+									 Tasks specific to HSEARCH-1111/HSEARCH-1112 (Bug):
+									 - [ ] bug task1
+									 - [ ] bug task2
+
+									 Tasks specific to HSEARCH-1113 (Improvement):
+									 - [ ] improvement task1
+									 - [ ] improvement task2
+									 - [ ] improvement task3
+
+
+									 <!-- Hibernate GitHub Bot task list end -->""" );
+				} );
+	}
+
+	@Test
+	void createTasksNullIssueType() throws IOException {
+		JiraIssues issues = new JiraIssues();
+		JiraIssue issue1 = new JiraIssue();
+		issue1.key = "HSEARCH-1111";
+		issue1.fields = new JiraFields();
+		issue1.fields.issuetype = new JiraSimpleObject();
+		issue1.fields.issuetype.name = "Bug";
+		JiraIssue issue2 = new JiraIssue();
+		issue2.key = "HSEARCH-1112";
+		issue2.fields = new JiraFields();
+		issue2.fields.issuetype = null;
+		issues.issues = List.of( issue1, issue2 );
+		when( mock.find( anyString(), anyString() ) ).thenReturn( issues );
+
+		long repoId = 344815557L;
+		long prId = 585627026L;
+		given()
+				.github( mocks -> {
+					mocks.configFile("hibernate-github-bot.yml")
+							.fromString( """
+									features: [ EDIT_PULL_REQUEST_BODY_ADD_TASK_LIST ]
+									jira:
+									  projectKey: "HSEARCH"
+									pullRequestTasks:
+									  enabled: true
+									  tasks:
+									    default:
+									      - default task1
+									    bug:
+									      - bug task1
+									""" );
+
+					GHRepository repoMock = mocks.repository( "yrodiere/hibernate-github-bot-playground" );
+					when( repoMock.getId() ).thenReturn( repoId );
+
+					PullRequestMockHelper.start( mocks, prId, repoMock )
+							.commit( "HSEARCH-1111 Commit 1" )
+							.commit( "HSEARCH-1112 Commit 2" )
+							.comment( "some comment" );
+
+					mockCheckRuns( repoMock, "6e9f11a1e2946b207c6eb245ec942f2b5a3ea156" );
+				} )
+				.when()
+				.payloadFromClasspath( "/pullrequest-opened-hsearch-1111-no-body.json" )
+				.event( GHEvent.PULL_REQUEST )
+				.then()
+				.github( mocks -> {
+					GHPullRequest prMock = mocks.pullRequest( prId );
+					ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass( String.class );
+					verify( prMock ).setBody( bodyCaptor.capture() );
+					assertThat( bodyCaptor.getValue() )
+							.isEqualTo( """
+
+
+									 ---
+									 <!-- Hibernate GitHub Bot task list start -->
+									 Please make sure that the following tasks are completed:
+									 Tasks specific to HSEARCH-1111 (Bug):
+									 - [ ] bug task1
+
+									 Tasks specific to HSEARCH-1112 (Other):
+									 - [ ] default task1
+
+
+									 <!-- Hibernate GitHub Bot task list end -->""" );
+				} );
+	}
+
+	@Test
 	void tasksCheckIgnored() throws IOException {
 		long repoId = 344815557L;
 		long prId = 585627026L;
