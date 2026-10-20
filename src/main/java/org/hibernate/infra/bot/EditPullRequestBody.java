@@ -95,8 +95,8 @@ public class EditPullRequestBody {
 
 		for ( int attempt = 0; attempt < MAX_RETRIES; attempt++ ) {
 			String body = originalBody;
-			body = addUpdateTaskList( body, repository, repositoryConfig, pullRequest );
 			body = addIssueLinks( body, repository, repositoryConfig, pullRequest );
+			body = addUpdateTaskList( body, repository, repositoryConfig, pullRequest );
 
 			if ( body.equals( originalBody ) ) {
 				return;
