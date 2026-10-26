@@ -4,6 +4,9 @@ import java.net.URL;
 import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
+// The optional /job/{id} segment is not present in URLs published by the Develocity CCUD plugin today
+// (it always publishes run-level URLs like .../actions/runs/{runId}/attempts/{attempt}),
+// but check run details URLs do contain it, and we parse it speculatively for future-proofing.
 public record GitHubActionsRunId(long run, OptionalLong job) {
 
 	private static final Pattern FORMAT = Pattern.compile( "(?:actions/)?runs/(\\d+)(?:/job/(\\d+))?" );

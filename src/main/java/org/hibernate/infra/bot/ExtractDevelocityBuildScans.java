@@ -367,7 +367,10 @@ public class ExtractDevelocityBuildScans {
 			return scan;
 		}
 
-		// Strategy 1: direct match by job ID in the build scan URL
+		// Strategy 1: direct match by job ID in the build scan URL.
+		// Speculative future-proofing: the CCUD plugin currently publishes only run-level URLs
+		// (.../actions/runs/{runId}/attempts/{attempt}), never job-level, so this won't fire today.
+		// The fix's actual effectiveness rests on strategies 2 and 3 below.
 		if ( parsed.job().isPresent() ) {
 			GHCheckRun matched = ghaCheckRunById.get( parsed.job().getAsLong() );
 			if ( matched != null ) {
