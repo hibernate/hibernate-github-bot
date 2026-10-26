@@ -1,17 +1,26 @@
 package org.hibernate.infra.bot.util;
 
 import java.net.URL;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
-public record GitHubActionsRunId(long run) {
+public record GitHubActionsRunId(long run, OptionalLong job) {
 
-	private static final Pattern FORMAT = Pattern.compile( "(?:actions/)?runs/(\\d+)" );
+	private static final Pattern FORMAT = Pattern.compile( "(?:actions/)?runs/(\\d+)(?:/job/(\\d+))?" );
+
+	public GitHubActionsRunId(long run) {
+		this( run, OptionalLong.empty() );
+	}
 
 	public static GitHubActionsRunId parse(URL detailsUrl) {
 		var matcher = FORMAT.matcher( detailsUrl.toString() );
 		if ( !matcher.find() ) {
 			throw new IllegalArgumentException( "Invalid format for a GitHub Actions run URL: " + detailsUrl );
 		}
-		return new GitHubActionsRunId( Long.parseLong( matcher.group( 1 ) ) );
+		long run = Long.parseLong( matcher.group( 1 ) );
+		OptionalLong job = matcher.group( 2 ) != null
+				? OptionalLong.of( Long.parseLong( matcher.group( 2 ) ) )
+				: OptionalLong.empty();
+		return new GitHubActionsRunId( run, job );
 	}
 }

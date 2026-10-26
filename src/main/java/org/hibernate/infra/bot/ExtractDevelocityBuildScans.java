@@ -232,6 +232,12 @@ public class ExtractDevelocityBuildScans {
 					}
 				}
 				buildScans.sort( DevelocityCIBuildScan.COMPARATOR );
+				try {
+					buildScans = enrichGHABuildScansWithJobNames( buildScans, checkRuns );
+				}
+				catch (RuntimeException e) {
+					Log.warnf( e, "Failed to enrich GHA build scans with job names for commit %s", sha );
+				}
 			}
 			catch (RuntimeException e) {
 				if ( failure == null ) {
@@ -313,6 +319,114 @@ public class ExtractDevelocityBuildScans {
 	private boolean isJenkinsBuild(GHCheckRun checkRun) {
 		return checkRun.getApp().getId() == deploymentConfig.jenkins().githubAppId()
 				&& checkRun.getExternalId() != null && !checkRun.getExternalId().isBlank();
+	}
+
+	private List<DevelocityCIBuildScan> enrichGHABuildScansWithJobNames(List<DevelocityCIBuildScan> buildScans,
+			List<GHCheckRun> checkRuns) {
+		// Group GHA check runs by workflow run ID, indexed by check run ID for direct lookup
+		Map<Long, GHCheckRun> ghaCheckRunById = new HashMap<>();
+		Map<Long, List<GHCheckRun>> ghaCheckRunsByRunId = new HashMap<>();
+		for ( GHCheckRun cr : checkRuns ) {
+			if ( !isGitHubActionsWorkflow( cr ) || isOwnCheckRun( cr.getName() ) ) {
+				continue;
+			}
+			try {
+				var parsed = GitHubActionsRunId.parse( cr.getDetailsUrl() );
+				if ( parsed.job().isPresent() ) {
+					ghaCheckRunById.put( parsed.job().getAsLong(), cr );
+				}
+				ghaCheckRunsByRunId.computeIfAbsent( parsed.run(), k -> new ArrayList<>() ).add( cr );
+			}
+			catch (RuntimeException e) {
+				// Not a valid GHA URL, skip
+			}
+		}
+
+		if ( ghaCheckRunById.isEmpty() && ghaCheckRunsByRunId.isEmpty() ) {
+			return buildScans;
+		}
+
+		List<DevelocityCIBuildScan> result = new ArrayList<>( buildScans.size() );
+		for ( DevelocityCIBuildScan scan : buildScans ) {
+			result.add( tryEnrichWithJobName( scan, ghaCheckRunById, ghaCheckRunsByRunId ) );
+		}
+		return result;
+	}
+
+	private DevelocityCIBuildScan tryEnrichWithJobName(DevelocityCIBuildScan scan,
+			Map<Long, GHCheckRun> ghaCheckRunById,
+			Map<Long, List<GHCheckRun>> ghaCheckRunsByRunId) {
+		if ( scan.jobOrWorkflowUri() == null ) {
+			return scan;
+		}
+		GitHubActionsRunId parsed;
+		try {
+			parsed = GitHubActionsRunId.parse( scan.jobOrWorkflowUri().toURL() );
+		}
+		catch (Exception e) {
+			return scan;
+		}
+
+		// Strategy 1: direct match by job ID in the build scan URL
+		if ( parsed.job().isPresent() ) {
+			GHCheckRun matched = ghaCheckRunById.get( parsed.job().getAsLong() );
+			if ( matched != null ) {
+				return applyCheckRunInfo( scan, matched );
+			}
+		}
+
+		// Strategy 2: match by tag — find a build scan tag that appears in exactly one check run name
+		List<GHCheckRun> candidates = ghaCheckRunsByRunId.getOrDefault( parsed.run(), List.of() );
+		if ( candidates.size() <= 1 ) {
+			if ( candidates.size() == 1 ) {
+				return applyCheckRunInfo( scan, candidates.get( 0 ) );
+			}
+			return scan;
+		}
+		GHCheckRun matched = matchByTags( scan, candidates );
+		if ( matched != null ) {
+			return applyCheckRunInfo( scan, matched );
+		}
+
+		return scan;
+	}
+
+	private static GHCheckRun matchByTags(DevelocityCIBuildScan scan, List<GHCheckRun> candidates) {
+		GHCheckRun uniqueMatch = null;
+		for ( String tag : scan.tags() ) {
+			if ( tag.length() < 2 ) {
+				continue;
+			}
+			GHCheckRun tagMatch = null;
+			int matchCount = 0;
+			Pattern tagPattern = Pattern.compile( "\\b" + Pattern.quote( tag ) + "\\b",
+					Pattern.CASE_INSENSITIVE );
+			for ( GHCheckRun cr : candidates ) {
+				if ( tagPattern.matcher( cr.getName() ).find() ) {
+					tagMatch = cr;
+					matchCount++;
+				}
+			}
+			if ( matchCount == 1 ) {
+				if ( uniqueMatch == null || uniqueMatch == tagMatch ) {
+					uniqueMatch = tagMatch;
+				}
+				else {
+					// Different tags point to different check runs — ambiguous
+					return null;
+				}
+			}
+		}
+		return uniqueMatch;
+	}
+
+	private static DevelocityCIBuildScan applyCheckRunInfo(DevelocityCIBuildScan scan, GHCheckRun checkRun) {
+		try {
+			return scan.withJobInfo( checkRun.getName(), checkRun.getDetailsUrl().toURI() );
+		}
+		catch (Exception e) {
+			return scan;
+		}
 	}
 
 	private DevelocityCIBuildScan toCIBuildScan(Build build) {

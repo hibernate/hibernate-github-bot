@@ -560,6 +560,158 @@ public class ExtractDevelocityBuildScansTest {
 				} );
 	}
 
+	@Test
+	void checkRunCompleted_enrichJobNames_tagMatching() throws IOException {
+		long commonRunId = 27276276443L;
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false,
+						"https://github.com/hibernate/hibernate-orm/actions/runs/" + commonRunId,
+						List.of( "CI", "hsqldb", "Linux" ) ),
+				createBuildScan( "scan2", true, false,
+						"https://github.com/hibernate/hibernate-orm/actions/runs/" + commonRunId,
+						List.of( "CI", "mariadb", "Linux" ) ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA, "build / hsqldb", commonRunId,
+									GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS ),
+							mockGitHubActionsCheckRun( HEAD_SHA, "build / mariadb", commonRunId,
+									GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "summary" ).asString()
+							.contains( "build / hsqldb" )
+							.contains( "build / mariadb" )
+							.doesNotContain( "|[Build](" );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_enrichJobNames_ambiguousTagFallback() throws IOException {
+		long commonRunId = 27276276443L;
+		// Tag "h2" matches both "build / h2" and "build / Data TCK - h2", so should fall back
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false,
+						"https://github.com/hibernate/hibernate-orm/actions/runs/" + commonRunId,
+						List.of( "CI", "h2", "Linux" ) ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA, "build / h2", commonRunId,
+									GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS ),
+							mockGitHubActionsCheckRun( HEAD_SHA, "build / Data TCK - h2", commonRunId,
+									GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					// h2 matches both check run names, so should fall back to "Build" (the CI workflow value)
+					assertThat( outputCaptor.getValue() ).extracting( "summary" ).asString()
+							.contains( "|[Build](" );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_enrichJobNames_directJobIdMatch() throws IOException {
+		long commonRunId = 27276276443L;
+		long jobId = 80558394108L;
+		// Build scan URL contains the job ID — direct match
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false,
+						"https://github.com/hibernate/hibernate-orm/actions/runs/" + commonRunId
+								+ "/job/" + jobId,
+						List.of( "CI", "hsqldb" ) ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+
+					var checkRun = mockGitHubActionsCheckRun( HEAD_SHA, "build / hsqldb", commonRunId,
+							GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS );
+					// Override the details URL to include the job ID matching the build scan URL
+					when( checkRun.getDetailsUrl() ).thenReturn( new URL(
+							"https://github.com/hibernate/hibernate-orm/actions/runs/" + commonRunId
+									+ "/job/" + jobId ) );
+					mockGetCheckRuns( repoMock, HEAD_SHA, checkRun );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "summary" ).asString()
+							.contains( "build / hsqldb" )
+							.doesNotContain( "|[Build](" );
+				} );
+	}
+
+	@Test
+	void checkRunCompleted_enrichJobNames_singleCheckRunForRun() throws IOException {
+		long runId = 99999L;
+		// Only one check run for this run ID — trivial match
+		when( develocityBuildsApiMock.getBuilds( any() ) ).thenReturn( List.of(
+				createBuildScan( "scan1", false, false,
+						"https://github.com/hibernate/hibernate-orm/actions/runs/" + runId,
+						List.of( "CI" ) ) ) );
+
+		var updateBuilderRef = new java.util.concurrent.atomic.AtomicReference<GHCheckRunBuilder>();
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( DEVELOCITY_BUILD_SCAN_CONFIG );
+
+					GHRepository repoMock = mocks.repository( REPO_NAME );
+
+					mockGetCheckRuns( repoMock, HEAD_SHA,
+							mockGitHubActionsCheckRun( HEAD_SHA, "My Workflow Job", runId,
+									GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS ) );
+					updateBuilderRef.set( mockDevelocityCheckRun( repoMock, HEAD_SHA ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/check-run-completed-github-actions.json" )
+				.event( GHEvent.CHECK_RUN )
+				.then()
+				.github( mocks -> {
+					var outputCaptor = ArgumentCaptor.forClass( GHCheckRunBuilder.Output.class );
+					verify( updateBuilderRef.get() ).add( outputCaptor.capture() );
+					assertThat( outputCaptor.getValue() ).extracting( "summary" ).asString()
+							.contains( "My Workflow Job" );
+				} );
+	}
+
 	private GHCheckRun mockGitHubActionsCheckRun(String sha) throws IOException {
 		return mockGitHubActionsCheckRun( sha, GHCheckRun.Status.COMPLETED, GHCheckRun.Conclusion.SUCCESS );
 	}
@@ -651,6 +803,11 @@ public class ExtractDevelocityBuildScansTest {
 	}
 
 	private Build createBuildScan(String id, boolean hasFailed, boolean hasVerificationFailure, String ghaUrl) {
+		return createBuildScan( id, hasFailed, hasVerificationFailure, ghaUrl, List.of( "CI" ) );
+	}
+
+	private Build createBuildScan(String id, boolean hasFailed, boolean hasVerificationFailure, String ghaUrl,
+			List<String> tags) {
 		var env = new BuildAttributesEnvironment();
 		env.setPublicHostname( "host1" );
 
@@ -668,7 +825,7 @@ public class ExtractDevelocityBuildScansTest {
 
 		var attrs = new MavenAttributes();
 		attrs.setEnvironment( env );
-		attrs.setTags( List.of( "CI" ) );
+		attrs.setTags( tags );
 		attrs.setValues( List.of( providerValue, jobValue ) );
 		attrs.setLinks( List.of( link ) );
 		attrs.setRequestedGoals( List.of( "clean", "install" ) );

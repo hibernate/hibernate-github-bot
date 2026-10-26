@@ -28,6 +28,32 @@ class GitHubActionsRunIdTest {
 	}
 
 	@Test
+	void actionsRunsWithJobId() throws Exception {
+		var url = new URL(
+				"https://github.com/hibernate/hibernate-orm/actions/runs/27276276443/job/80558394108" );
+		var parsed = GitHubActionsRunId.parse( url );
+		assertThat( parsed.run() ).isEqualTo( 27276276443L );
+		assertThat( parsed.job() ).isPresent().hasValue( 80558394108L );
+	}
+
+	@Test
+	void actionsRunsWithAttemptButNoJobId() throws Exception {
+		var url = new URL(
+				"https://github.com/hibernate/hibernate-orm/actions/runs/39791269270/attempts/2" );
+		var parsed = GitHubActionsRunId.parse( url );
+		assertThat( parsed.run() ).isEqualTo( 39791269270L );
+		assertThat( parsed.job() ).isEmpty();
+	}
+
+	@Test
+	void actionsRunsNoJobId() throws Exception {
+		var url = new URL( "https://github.com/hibernate/hibernate-orm/actions/runs/12345678901" );
+		var parsed = GitHubActionsRunId.parse( url );
+		assertThat( parsed.run() ).isEqualTo( 12345678901L );
+		assertThat( parsed.job() ).isEmpty();
+	}
+
+	@Test
 	void invalidFormat() throws Exception {
 		var url = new URL( "https://github.com/hibernate/hibernate-orm/pull/123" );
 		assertThatThrownBy( () -> GitHubActionsRunId.parse( url ) )

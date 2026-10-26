@@ -20,6 +20,11 @@ public record DevelocityCIBuildScan(String provider, String hostname,
 					.thenComparing( DevelocityCIBuildScan::hostname )
 					.thenComparing( DevelocityCIBuildScan::availableAt );
 
+	public DevelocityCIBuildScan withJobInfo(String jobOrWorkflow, URI jobOrWorkflowUri) {
+		return new DevelocityCIBuildScan( provider, hostname, jobOrWorkflow, jobOrWorkflowUri, stage,
+				availableAt, tags, goals, status, testStatus, buildScanUri, failuresUri, testsUri, logsUri );
+	}
+
 	public enum Status {
 		SUCCESS,
 		FAILURE
