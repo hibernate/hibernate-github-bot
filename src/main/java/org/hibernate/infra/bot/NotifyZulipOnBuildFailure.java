@@ -132,7 +132,7 @@ public class NotifyZulipOnBuildFailure {
 	}
 
 	private String resolveChannel(RepositoryConfig repositoryConfig, String repoName) {
-		if ( repositoryConfig.zulipNotification != null
+		if ( repositoryConfig != null && repositoryConfig.zulipNotification != null
 				&& repositoryConfig.zulipNotification.channel.isPresent() ) {
 			return repositoryConfig.zulipNotification.channel.get();
 		}
@@ -140,7 +140,7 @@ public class NotifyZulipOnBuildFailure {
 	}
 
 	private String resolveTopic(RepositoryConfig repositoryConfig) {
-		if ( repositoryConfig.zulipNotification != null
+		if ( repositoryConfig != null && repositoryConfig.zulipNotification != null
 				&& repositoryConfig.zulipNotification.topic.isPresent() ) {
 			return repositoryConfig.zulipNotification.topic.get();
 		}
