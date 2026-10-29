@@ -204,7 +204,7 @@ public class NotifyZulipOnBuildFailureTest {
 	}
 
 	@Test
-	void noConfig_noNotification() throws IOException {
+	void noConfig_defaultOnFeature_notifiesZulipWithDefaults() throws IOException {
 		given()
 				.github( mocks -> {
 				} )
@@ -213,7 +213,12 @@ public class NotifyZulipOnBuildFailureTest {
 				.event( GHEvent.WORKFLOW_RUN )
 				.then()
 				.github( mocks -> {
-					verifyNoInteractions( zulipClientMock );
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+					);
 				} );
 	}
 
