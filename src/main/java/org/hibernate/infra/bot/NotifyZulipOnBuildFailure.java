@@ -2,6 +2,7 @@ package org.hibernate.infra.bot;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -60,7 +61,7 @@ public class NotifyZulipOnBuildFailure {
 		GHRepository repository = payload.getRepository();
 		String repoFullName = repository.getFullName();
 		String repoName = repository.getName();
-		String channel = resolveChannel( repositoryConfig, repoName );
+		String channel = resolveChannel( repositoryConfig, repoName, workflowRun.getName() );
 		String topic = resolveTopic( repositoryConfig );
 		String branch = resolveBranch( workflowRun, repository );
 		StringBuilder message = new StringBuilder(
@@ -131,10 +132,14 @@ public class NotifyZulipOnBuildFailure {
 		return workflowRun.getHeadBranch();
 	}
 
-	private String resolveChannel(RepositoryConfig repositoryConfig, String repoName) {
+	private String resolveChannel(RepositoryConfig repositoryConfig, String repoName, String workflowName) {
 		if ( repositoryConfig != null && repositoryConfig.zulipNotification != null
 				&& repositoryConfig.zulipNotification.channel.isPresent() ) {
 			return repositoryConfig.zulipNotification.channel.get();
+		}
+		if ( workflowName != null
+				&& workflowName.toLowerCase( Locale.ROOT ).endsWith( "ci reporting" ) ) {
+			return DEFAULT_CHANNEL;
 		}
 		return REPO_TO_CHANNEL.getOrDefault( repoName, DEFAULT_CHANNEL );
 	}
