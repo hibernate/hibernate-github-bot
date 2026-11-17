@@ -180,7 +180,7 @@ public class NotifyZulipOnBuildFailureTest {
 				.github( mocks -> {
 					verify( zulipClientMock ).sendMessage(
 							"stream",
-							"hibernate-orm-dev",
+							"hibernate-infra",
 							"GitHub workflow failures",
 							"**[GH Actions CI reporting](https://github.com/hibernate/hibernate-orm/actions/runs/14200000000)** failed on `6.6` in hibernate/hibernate-orm."
 					);
@@ -426,6 +426,196 @@ public class NotifyZulipOnBuildFailureTest {
 									+ "\nFailing jobs: **[Build / compile](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/201)**, **[Deploy / staging / verify](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/203)**"
 					);
 				} );
+	}
+
+	@Test
+	void ciReportingFailure_orm_notifiesInfraChannel() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+				} )
+				.when()
+				.payloadFromString( workflowRunFailurePayload( "hibernate-orm", "CI Reporting", "workflow_run" ) )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-infra",
+							"GitHub workflow failures",
+							"**[CI Reporting](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+					);
+				} );
+	}
+
+	@Test
+	void ciReportingFailure_search_notifiesInfraChannel() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+				} )
+				.when()
+				.payloadFromString( workflowRunFailurePayload( "hibernate-search", "CI Reporting", "workflow_run" ) )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-infra",
+							"GitHub workflow failures",
+							"**[CI Reporting](https://github.com/hibernate/hibernate-search/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-search."
+					);
+				} );
+	}
+
+	@Test
+	void ciReportingFailure_validator_notifiesInfraChannel() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+				} )
+				.when()
+				.payloadFromString( workflowRunFailurePayload( "hibernate-validator", "CI Reporting", "workflow_run" ) )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-infra",
+							"GitHub workflow failures",
+							"**[CI Reporting](https://github.com/hibernate/hibernate-validator/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-validator."
+					);
+				} );
+	}
+
+	@Test
+	void ciReportingFailure_reactive_notifiesInfraChannel() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+				} )
+				.when()
+				.payloadFromString( workflowRunFailurePayload( "hibernate-reactive",
+						"Hibernate Reactive CI reporting", "workflow_run" ) )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-infra",
+							"GitHub workflow failures",
+							"**[Hibernate Reactive CI reporting](https://github.com/hibernate/hibernate-reactive/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-reactive."
+					);
+				} );
+	}
+
+	@Test
+	void ciReportingFailure_customChannelOverridesDefault() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( """
+									features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]
+									zulipNotification:
+									  channel: custom-channel
+									""" );
+				} )
+				.when()
+				.payloadFromString( workflowRunFailurePayload( "hibernate-orm", "CI Reporting", "workflow_run" ) )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"custom-channel",
+							"GitHub workflow failures",
+							"**[CI Reporting](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+					);
+				} );
+	}
+
+	@Test
+	void nonReportingWorkflowFailure_notifiesRepoChannel() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+				} )
+				.when()
+				.payloadFromString( workflowRunFailurePayload( "hibernate-search", "Hibernate Search CI", "schedule" ) )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-search-dev",
+							"GitHub workflow failures",
+							"**[Hibernate Search CI](https://github.com/hibernate/hibernate-search/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-search."
+					);
+				} );
+	}
+
+	private static String workflowRunFailurePayload(String repoName, String workflowName, String event) {
+		return """
+				{
+				  "action": "completed",
+				  "workflow_run": {
+				    "id": 14112498346,
+				    "name": "%1$s",
+				    "head_branch": "main",
+				    "head_sha": "ddbf12d7d8ff89a85c579c98c75358d8e9015cc5",
+				    "event": "%3$s",
+				    "status": "completed",
+				    "conclusion": "failure",
+				    "workflow_id": 124546728,
+				    "url": "https://api.github.com/repos/hibernate/%2$s/actions/runs/14112498346",
+				    "html_url": "https://github.com/hibernate/%2$s/actions/runs/14112498346",
+				    "pull_requests": [],
+				    "created_at": "2025-03-27T17:05:01Z",
+				    "updated_at": "2025-03-27T17:19:44Z",
+				    "run_attempt": 1,
+				    "run_started_at": "2025-03-27T17:17:28Z",
+				    "jobs_url": "https://api.github.com/repos/hibernate/%2$s/actions/runs/14112498346/jobs",
+				    "logs_url": "https://api.github.com/repos/hibernate/%2$s/actions/runs/14112498346/logs",
+				    "check_suite_url": "https://api.github.com/repos/hibernate/%2$s/check-suites/36324304144",
+				    "artifacts_url": "https://api.github.com/repos/hibernate/%2$s/actions/runs/14112498346/artifacts",
+				    "cancel_url": "https://api.github.com/repos/hibernate/%2$s/actions/runs/14112498346/cancel",
+				    "rerun_url": "https://api.github.com/repos/hibernate/%2$s/actions/runs/14112498346/rerun",
+				    "workflow_url": "https://api.github.com/repos/hibernate/%2$s/actions/workflows/124546728",
+				    "head_commit": {
+				      "id": "ddbf12d7d8ff89a85c579c98c75358d8e9015cc5",
+				      "message": "Some commit",
+				      "timestamp": "2025-03-27T16:54:54Z",
+				      "author": { "name": "Test", "email": "test@test.com" },
+				      "committer": { "name": "Test", "email": "test@test.com" }
+				    },
+				    "repository": {
+				      "id": 123456, "name": "%2$s", "full_name": "hibernate/%2$s",
+				      "private": false, "owner": { "login": "hibernate", "id": 348262 },
+				      "html_url": "https://github.com/hibernate/%2$s"
+				    },
+				    "head_repository": {
+				      "id": 123456, "name": "%2$s", "full_name": "hibernate/%2$s",
+				      "private": false, "owner": { "login": "hibernate", "id": 348262 },
+				      "html_url": "https://github.com/hibernate/%2$s"
+				    }
+				  },
+				  "workflow": {
+				    "id": 124546728, "name": "%1$s",
+				    "path": ".github/workflows/ci.yml", "state": "active"
+				  },
+				  "repository": {
+				    "id": 123456, "name": "%2$s", "full_name": "hibernate/%2$s",
+				    "private": false, "owner": { "login": "hibernate", "id": 348262 },
+				    "html_url": "https://github.com/hibernate/%2$s"
+				  },
+				  "installation": { "id": 15390286 }
+				}
+				""".formatted( workflowName, repoName, event );
 	}
 
 	private record JobInfo(String name, String htmlUrl, GHWorkflowRun.Conclusion conclusion) {
