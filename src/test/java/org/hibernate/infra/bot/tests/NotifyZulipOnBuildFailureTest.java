@@ -1,6 +1,8 @@
 package org.hibernate.infra.bot.tests;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -12,6 +14,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
+import org.hibernate.infra.bot.util.WorkflowJobAnnotations;
 import org.hibernate.infra.bot.zulip.ZulipClient;
 
 import org.junit.jupiter.api.Test;
@@ -38,6 +41,9 @@ public class NotifyZulipOnBuildFailureTest {
 	@InjectMock
 	@RestClient
 	ZulipClient zulipClientMock;
+
+	@InjectMock
+	WorkflowJobAnnotations workflowJobAnnotationsMock;
 
 	@Test
 	void scheduleFailure_notifiesZulip() throws IOException {
@@ -559,6 +565,186 @@ public class NotifyZulipOnBuildFailureTest {
 				} );
 	}
 
+	@Test
+	void scheduleFailure_withFailingJobAnnotations_surfacesFailureCause() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Publish Develocity build scans",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101",
+									GHWorkflowRun.Conclusion.FAILURE, 101L )
+					);
+
+					when( workflowJobAnnotationsMock.getAnnotations( any(), eq( 101L ) ) )
+							.thenReturn( List.of(
+									new WorkflowJobAnnotations.Annotation( "Failure cause",
+											"2 Develocity build scan(s) failed to publish. This is likely a Develocity server issue, not a code problem." )
+							) );
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs: **[Publish Develocity build scans](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
+									+ "\nFailure cause: 2 Develocity build scan(s) failed to publish. This is likely a Develocity server issue, not a code problem."
+					);
+				} );
+	}
+
+	@Test
+	void scheduleFailure_withMultipleAnnotations_surfacesAll() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Build",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101",
+									GHWorkflowRun.Conclusion.FAILURE, 101L ),
+							new JobInfo( "Publish",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102",
+									GHWorkflowRun.Conclusion.FAILURE, 102L )
+					);
+
+					when( workflowJobAnnotationsMock.getAnnotations( any(), eq( 101L ) ) )
+							.thenReturn( List.of() );
+					when( workflowJobAnnotationsMock.getAnnotations( any(), eq( 102L ) ) )
+							.thenReturn( List.of(
+									new WorkflowJobAnnotations.Annotation( "Failure cause",
+											"Server error during publish" )
+							) );
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs: **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**, **[Publish](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102)**"
+									+ "\nFailure cause: Server error during publish"
+					);
+				} );
+	}
+
+	@Test
+	void failingJob_warningLevelAnnotation_notSurfaced() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Build",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101",
+									GHWorkflowRun.Conclusion.FAILURE, 101L )
+					);
+
+					when( workflowJobAnnotationsMock.getAnnotations( any(), eq( 101L ) ) )
+							.thenReturn( List.of() );
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs: **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
+					);
+				} );
+	}
+
+	@Test
+	void scheduleFailure_annotationFetchFails_singleJob_showsErrorLine() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Build",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101",
+									GHWorkflowRun.Conclusion.FAILURE, 101L )
+					);
+
+					when( workflowJobAnnotationsMock.getAnnotations( any(), eq( 101L ) ) )
+							.thenThrow( new RuntimeException( "API error" ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs: **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**"
+									+ "\nInternal bot error: unable to retrieve details"
+					);
+				} );
+	}
+
+	@Test
+	void scheduleFailure_annotationFetchFails_multipleJobs_showsSingleErrorLine() throws IOException {
+		given()
+				.github( mocks -> {
+					mocks.configFile( "hibernate-github-bot.yml" )
+							.fromString( "features: [ NOTIFY_ZULIP_ON_BUILD_FAILURE ]" );
+
+					GHWorkflowRun workflowRunMock = mocks.ghObject( GHWorkflowRun.class, 14112498346L );
+					mockFailingJobs( workflowRunMock,
+							new JobInfo( "Build",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101",
+									GHWorkflowRun.Conclusion.FAILURE, 101L ),
+							new JobInfo( "Test",
+									"https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102",
+									GHWorkflowRun.Conclusion.FAILURE, 102L )
+					);
+
+					when( workflowJobAnnotationsMock.getAnnotations( any(), eq( 101L ) ) )
+							.thenThrow( new RuntimeException( "API error" ) );
+					when( workflowJobAnnotationsMock.getAnnotations( any(), eq( 102L ) ) )
+							.thenThrow( new RuntimeException( "API error" ) );
+				} )
+				.when()
+				.payloadFromClasspath( "/workflow-run-completed-failure-schedule.json" )
+				.event( GHEvent.WORKFLOW_RUN )
+				.then()
+				.github( mocks -> {
+					verify( zulipClientMock ).sendMessage(
+							"stream",
+							"hibernate-orm-dev",
+							"GitHub workflow failures",
+							"**[Hibernate ORM CI](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346)** failed on `main` in hibernate/hibernate-orm."
+									+ "\nFailing jobs: **[Build](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/101)**, **[Test](https://github.com/hibernate/hibernate-orm/actions/runs/14112498346/job/102)**"
+									+ "\nInternal bot error: unable to retrieve details"
+					);
+				} );
+	}
+
 	private static String workflowRunFailurePayload(String repoName, String workflowName, String event) {
 		return """
 				{
@@ -618,7 +804,10 @@ public class NotifyZulipOnBuildFailureTest {
 				""".formatted( workflowName, repoName, event );
 	}
 
-	private record JobInfo(String name, String htmlUrl, GHWorkflowRun.Conclusion conclusion) {
+	private record JobInfo(String name, String htmlUrl, GHWorkflowRun.Conclusion conclusion, long id) {
+		JobInfo(String name, String htmlUrl, GHWorkflowRun.Conclusion conclusion) {
+			this( name, htmlUrl, conclusion, 0 );
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -646,6 +835,7 @@ public class NotifyZulipOnBuildFailureTest {
 			when( mockJobs[i].getName() ).thenReturn( jobs[i].name() );
 			when( mockJobs[i].getConclusion() ).thenReturn( jobs[i].conclusion() );
 			when( mockJobs[i].getHtmlUrl() ).thenReturn( url( jobs[i].htmlUrl() ) );
+			when( mockJobs[i].getId() ).thenReturn( jobs[i].id() );
 		}
 		if ( jobs.length == 1 ) {
 			when( iterator.next() ).thenReturn( mockJobs[0] );
