@@ -12,6 +12,7 @@ import org.hibernate.infra.bot.config.DeploymentConfig;
 import org.hibernate.infra.bot.config.Feature;
 import org.hibernate.infra.bot.config.RepositoryConfig;
 import org.hibernate.infra.bot.util.Streams;
+import org.hibernate.infra.bot.util.WorkflowJobAnnotations;
 import org.hibernate.infra.bot.zulip.ZulipClient;
 
 import io.quarkiverse.githubapp.ConfigFile;
@@ -37,6 +38,9 @@ public class NotifyZulipOnBuildFailure {
 
 	@Inject
 	DeploymentConfig deploymentConfig;
+
+	@Inject
+	WorkflowJobAnnotations workflowJobAnnotations;
 
 	@RestClient
 	ZulipClient zulipClient;
@@ -71,7 +75,7 @@ public class NotifyZulipOnBuildFailure {
 						branch,
 						repoFullName
 				) );
-		appendFailingJobs( message, workflowRun );
+		appendFailingJobs( message, workflowRun, repository );
 
 		if ( deploymentConfig.isDryRun() ) {
 			Log.infof( "Zulip notification (dry run) - channel: %s, topic: %s, message: %s",
@@ -88,7 +92,7 @@ public class NotifyZulipOnBuildFailure {
 		}
 	}
 
-	private void appendFailingJobs(StringBuilder message, GHWorkflowRun workflowRun) {
+	private void appendFailingJobs(StringBuilder message, GHWorkflowRun workflowRun, GHRepository repository) {
 		try {
 			List<GHWorkflowJob> failingJobs = Streams.toStream( workflowRun.listJobs() )
 					.filter( job -> job.getConclusion() == GHWorkflowRun.Conclusion.FAILURE )
@@ -103,9 +107,30 @@ public class NotifyZulipOnBuildFailure {
 					message.append( "**[%s](%s)**".formatted( job.getName(), job.getHtmlUrl().toString() ) );
 				}
 			}
+			appendFailureCauses( message, repository, failingJobs );
 		}
 		catch (Exception e) {
 			Log.warnf( e, "Failed to retrieve failing jobs for workflow run %s", workflowRun.getJobsUrl() );
+		}
+	}
+
+	private void appendFailureCauses(StringBuilder message, GHRepository repository,
+			List<GHWorkflowJob> failingJobs) {
+		boolean fetchFailed = false;
+		for ( GHWorkflowJob job : failingJobs ) {
+			try {
+				for ( WorkflowJobAnnotations.Annotation annotation : workflowJobAnnotations.getAnnotations( repository,
+						job.getId() ) ) {
+					message.append( "\n" ).append( annotation.title() ).append( ": " ).append( annotation.message() );
+				}
+			}
+			catch (Exception e) {
+				Log.warnf( e, "Failed to fetch annotations for job %s (check run %d)", job.getName(), job.getId() );
+				fetchFailed = true;
+			}
+		}
+		if ( fetchFailed ) {
+			message.append( "\nInternal bot error: unable to retrieve details" );
 		}
 	}
 
