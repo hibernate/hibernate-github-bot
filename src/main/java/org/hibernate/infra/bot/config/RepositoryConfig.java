@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.hibernate.infra.bot.util.Patterns;
 
